@@ -1,4 +1,4 @@
-name: Build All Platforms (iOS, Android, Windows, Web)
+﻿name: Build All Platforms
 
 on:
   push:
@@ -6,102 +6,162 @@ on:
   workflow_dispatch:
 
 jobs:
+  # ─────────────────────────────────────────
+  # ANDROID APK
+  # ─────────────────────────────────────────
   build-android:
     name: Build Android APK
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
-      - uses: subosito/flutter-action@v2
+
+      - name: Setup Flutter (stable)
+        uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           cache: true
-      - name: Cache Gradle
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-      - name: Flutter Pub Get
+
+      - name: Generate Android native scaffold
+        run: |
+          flutter create \
+            --project-name all_in_one_pos \
+            --org com.jayaneth.pos \
+            --platforms android \
+            .
+
+      - name: Install dependencies
         run: flutter pub get
-      - name: Build APK
-        run: flutter build apk --release
-      - name: Upload Android APK
+
+      - name: Build APK (debug)
+        run: flutter build apk --debug
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Android-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
 
+  # ─────────────────────────────────────────
+  # iOS IPA
+  # ─────────────────────────────────────────
   build-ios:
     name: Build Apple iOS
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter (stable)
+        uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           cache: true
-      - name: Flutter Create iOS Support
-        run: flutter create --project-name=all_in_one_pos --platforms=ios --org=com.jayaneth.pos .
-      - name: Flutter Pub Get
+
+      - name: Generate iOS native scaffold
+        run: |
+          flutter create \
+            --project-name all_in_one_pos \
+            --org com.jayaneth.pos \
+            --platforms ios \
+            .
+
+      - name: Install dependencies
         run: flutter pub get
-      - name: Build iOS Unsigned
+
+      - name: Build iOS (unsigned)
         run: flutter build ios --release --no-codesign
-      - name: Package iOS IPA
+
+      - name: Package into IPA
         run: |
           mkdir -p Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
-          zip -r JayanethPOS-iOS.ipa Payload
-      - name: Upload iOS IPA
+          zip -r JayanethPOS-iOS.ipa Payload/
+
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: Apple-iOS-IPA
           path: JayanethPOS-iOS.ipa
 
+  # ─────────────────────────────────────────
+  # WINDOWS EXE
+  # ─────────────────────────────────────────
   build-windows:
     name: Build Windows EXE
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter (stable)
+        uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           cache: true
-      - name: Flutter Create Windows Support
-        run: flutter create --project-name=all_in_one_pos --platforms=windows --org=com.jayaneth.pos .
-      - name: Flutter Pub Get
+
+      - name: Generate Windows native scaffold
+        shell: bash
+        run: |
+          flutter create \
+            --project-name all_in_one_pos \
+            --org com.jayaneth.pos \
+            --platforms windows \
+            .
+
+      - name: Install dependencies
         run: flutter pub get
-      - name: Build Windows App
+
+      - name: Build Windows app
         run: flutter build windows --release
-      - name: Package Windows Zip
+
+      - name: Zip Windows bundle
         shell: pwsh
         run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath JayanethPOS-Windows.zip
-      - name: Upload Windows Bundle
+
+      - name: Upload Windows bundle
         uses: actions/upload-artifact@v4
         with:
           name: Windows-Desktop-App
           path: JayanethPOS-Windows.zip
 
+  # ─────────────────────────────────────────
+  # WEB PWA
+  # ─────────────────────────────────────────
   build-web:
-    name: Build Web (PWA)
+    name: Build Web PWA
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter (stable)
+        uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           cache: true
-      - name: Flutter Pub Get
+
+      - name: Generate Web native scaffold
+        run: |
+          flutter create \
+            --project-name all_in_one_pos \
+            --org com.jayaneth.pos \
+            --platforms web \
+            .
+
+      - name: Install dependencies
         run: flutter pub get
+
       - name: Build Web
         run: flutter build web --release
-      - name: Upload Web Build
+
+      - name: Upload Web build
         uses: actions/upload-artifact@v4
         with:
           name: Web-PWA
