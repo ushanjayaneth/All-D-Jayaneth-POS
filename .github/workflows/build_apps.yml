@@ -19,9 +19,16 @@ jobs:
         with:
           channel: 'stable'
           cache: true
-      - name: Recreate Native Platforms
-        run: flutter create --project-name=all_in_one_pos --org=com.jayaneth.pos --platforms=android .
-      - name: Get Dependencies
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Flutter Pub Get
         run: flutter pub get
       - name: Build APK
         run: flutter build apk --release
@@ -40,9 +47,9 @@ jobs:
         with:
           channel: 'stable'
           cache: true
-      - name: Recreate Native Platforms
-        run: flutter create --project-name=all_in_one_pos --org=com.jayaneth.pos --platforms=ios .
-      - name: Get Dependencies
+      - name: Flutter Create iOS Support
+        run: flutter create --project-name=all_in_one_pos --platforms=ios --org=com.jayaneth.pos .
+      - name: Flutter Pub Get
         run: flutter pub get
       - name: Build iOS Unsigned
         run: flutter build ios --release --no-codesign
@@ -66,9 +73,9 @@ jobs:
         with:
           channel: 'stable'
           cache: true
-      - name: Recreate Native Platforms
-        run: flutter create --project-name=all_in_one_pos --org=com.jayaneth.pos --platforms=windows .
-      - name: Get Dependencies
+      - name: Flutter Create Windows Support
+        run: flutter create --project-name=all_in_one_pos --platforms=windows --org=com.jayaneth.pos .
+      - name: Flutter Pub Get
         run: flutter pub get
       - name: Build Windows App
         run: flutter build windows --release
@@ -90,9 +97,7 @@ jobs:
         with:
           channel: 'stable'
           cache: true
-      - name: Recreate Native Platforms
-        run: flutter create --project-name=all_in_one_pos --org=com.jayaneth.pos --platforms=web .
-      - name: Get Dependencies
+      - name: Flutter Pub Get
         run: flutter pub get
       - name: Build Web
         run: flutter build web --release
