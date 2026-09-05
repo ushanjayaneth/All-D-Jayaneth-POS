@@ -33,23 +33,12 @@ jobs:
           flutter create --project-name all_in_one_pos --org com.jayaneth.pos --platforms android /tmp/scaffold
           cp -r /tmp/scaffold/android ./android
 
-      - name: Configure Android build & disable AarMetadata check
+      - run: flutter pub get
+
+      - name: Patch plugins and app compileSdk to 36
         run: |
-          mkdir -p ~/.gradle/init.d
-          cat << 'EOF' > ~/.gradle/init.d/override.gradle
-          allprojects {
-              afterEvaluate { project ->
-                  if (project.hasProperty('android')) {
-                      project.android {
-                          compileSdkVersion 36
-                      }
-                  }
-              }
-              tasks.matching { it.name.contains("AarMetadata") }.configureEach {
-                  enabled = false
-              }
-          }
-          EOF
+          PUB_DIR="${PUB_CACHE:-$HOME/.pub-cache}"
+          find "$PUB_DIR" -name "build.gradle" -exec sed -i 's/compileSdk 33/compileSdk 36/g; s/compileSdk 34/compileSdk 36/g; s/compileSdkVersion 33/compileSdkVersion 36/g; s/compileSdkVersion 34/compileSdkVersion 36/g' {} +
           if [ -f android/app/build.gradle ]; then
             sed -i 's/compileSdkVersion .*/compileSdkVersion 36/' android/app/build.gradle
             sed -i 's/compileSdk = .*/compileSdk = 36/' android/app/build.gradle
@@ -58,7 +47,6 @@ jobs:
             sed -i 's/compileSdk = .*/compileSdk = 36/' android/app/build.gradle.kts
           fi
 
-      - run: flutter pub get
       - run: flutter build apk --release
 
       - uses: actions/upload-artifact@v4
