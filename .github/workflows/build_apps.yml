@@ -28,14 +28,12 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate Android platform scaffold (keep existing lib)
+      - name: Backup lib and create Android scaffold
         run: |
-          flutter create \
-            --project-name all_in_one_pos \
-            --org com.jayaneth.pos \
-            --platforms android \
-            --no-overwrite \
-            .
+          cp -r lib lib_backup
+          flutter create --project-name all_in_one_pos --org com.jayaneth.pos --platforms android .
+          rm -rf lib
+          mv lib_backup lib
 
       - name: Install dependencies
         run: flutter pub get
@@ -65,14 +63,12 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate iOS platform scaffold (keep existing lib)
+      - name: Backup lib and create iOS scaffold
         run: |
-          flutter create \
-            --project-name all_in_one_pos \
-            --org com.jayaneth.pos \
-            --platforms ios \
-            --no-overwrite \
-            .
+          cp -r lib lib_backup
+          flutter create --project-name all_in_one_pos --org com.jayaneth.pos --platforms ios .
+          rm -rf lib
+          mv lib_backup lib
 
       - name: Install dependencies
         run: flutter pub get
@@ -108,15 +104,13 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate Windows platform scaffold (keep existing lib)
-        shell: bash
+      - name: Backup lib and create Windows scaffold
+        shell: pwsh
         run: |
-          flutter create \
-            --project-name all_in_one_pos \
-            --org com.jayaneth.pos \
-            --platforms windows \
-            --no-overwrite \
-            .
+          Copy-Item -Recurse -Force lib lib_backup
+          flutter create --project-name all_in_one_pos --org com.jayaneth.pos --platforms windows .
+          Remove-Item -Recurse -Force lib
+          Rename-Item lib_backup lib
 
       - name: Install dependencies
         run: flutter pub get
@@ -150,14 +144,12 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate macOS platform scaffold (keep existing lib)
+      - name: Backup lib and create macOS scaffold
         run: |
-          flutter create \
-            --project-name all_in_one_pos \
-            --org com.jayaneth.pos \
-            --platforms macos \
-            --no-overwrite \
-            .
+          cp -r lib lib_backup
+          flutter create --project-name all_in_one_pos --org com.jayaneth.pos --platforms macos .
+          rm -rf lib
+          mv lib_backup lib
 
       - name: Install dependencies
         run: flutter pub get
@@ -169,7 +161,6 @@ jobs:
         run: |
           cd build/macos/Build/Products/Release/
           zip -r ~/JayanethPOS-macOS.zip all_in_one_pos.app
-          cd -
 
       - name: Upload macOS bundle
         uses: actions/upload-artifact@v4
@@ -193,14 +184,12 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate Web platform scaffold (keep existing lib)
+      - name: Backup lib and create Web scaffold
         run: |
-          flutter create \
-            --project-name all_in_one_pos \
-            --org com.jayaneth.pos \
-            --platforms web \
-            --no-overwrite \
-            .
+          cp -r lib lib_backup
+          flutter create --project-name all_in_one_pos --org com.jayaneth.pos --platforms web .
+          rm -rf lib
+          mv lib_backup lib
 
       - name: Install dependencies
         run: flutter pub get
