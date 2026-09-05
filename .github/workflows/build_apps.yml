@@ -1,4 +1,4 @@
-﻿name: Build All Platforms
+name: Build All Platforms
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
   # ANDROID APK
   # ─────────────────────────────────────────
   build-android:
-    name: Build Android APK
+    name: 🤖 Build Android APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -28,31 +28,32 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate Android native scaffold
+      - name: Generate Android platform scaffold (keep existing lib)
         run: |
           flutter create \
             --project-name all_in_one_pos \
             --org com.jayaneth.pos \
             --platforms android \
+            --no-overwrite \
             .
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK (debug)
-        run: flutter build apk --debug
+      - name: Build APK (release)
+        run: flutter build apk --release --split-per-abi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Android-APK
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          path: build/app/outputs/flutter-apk/*.apk
 
   # ─────────────────────────────────────────
   # iOS IPA
   # ─────────────────────────────────────────
   build-ios:
-    name: Build Apple iOS
+    name: 🍎 Build iOS IPA
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -64,12 +65,13 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate iOS native scaffold
+      - name: Generate iOS platform scaffold (keep existing lib)
         run: |
           flutter create \
             --project-name all_in_one_pos \
             --org com.jayaneth.pos \
             --platforms ios \
+            --no-overwrite \
             .
 
       - name: Install dependencies
@@ -94,7 +96,7 @@ jobs:
   # WINDOWS EXE
   # ─────────────────────────────────────────
   build-windows:
-    name: Build Windows EXE
+    name: 🪟 Build Windows EXE
     runs-on: windows-latest
     steps:
       - name: Checkout code
@@ -106,13 +108,14 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate Windows native scaffold
+      - name: Generate Windows platform scaffold (keep existing lib)
         shell: bash
         run: |
           flutter create \
             --project-name all_in_one_pos \
             --org com.jayaneth.pos \
             --platforms windows \
+            --no-overwrite \
             .
 
       - name: Install dependencies
@@ -132,10 +135,53 @@ jobs:
           path: JayanethPOS-Windows.zip
 
   # ─────────────────────────────────────────
+  # macOS APP
+  # ─────────────────────────────────────────
+  build-macos:
+    name: 🍏 Build macOS App
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate macOS platform scaffold (keep existing lib)
+        run: |
+          flutter create \
+            --project-name all_in_one_pos \
+            --org com.jayaneth.pos \
+            --platforms macos \
+            --no-overwrite \
+            .
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS app
+        run: flutter build macos --release
+
+      - name: Zip macOS bundle
+        run: |
+          cd build/macos/Build/Products/Release/
+          zip -r ~/JayanethPOS-macOS.zip all_in_one_pos.app
+          cd -
+
+      - name: Upload macOS bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-Desktop-App
+          path: ~/JayanethPOS-macOS.zip
+
+  # ─────────────────────────────────────────
   # WEB PWA
   # ─────────────────────────────────────────
   build-web:
-    name: Build Web PWA
+    name: 🌐 Build Web PWA
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -147,19 +193,20 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate Web native scaffold
+      - name: Generate Web platform scaffold (keep existing lib)
         run: |
           flutter create \
             --project-name all_in_one_pos \
             --org com.jayaneth.pos \
             --platforms web \
+            --no-overwrite \
             .
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build Web
-        run: flutter build web --release
+      - name: Build Web (release)
+        run: flutter build web --release --web-renderer canvaskit
 
       - name: Upload Web build
         uses: actions/upload-artifact@v4
