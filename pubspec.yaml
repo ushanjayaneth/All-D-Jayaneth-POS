@@ -16,6 +16,7 @@ dependencies:
   # Cross-Platform Local Database
   sqflite: ^2.3.3+1
   sqflite_common_ffi: ^2.3.3
+  sqflite_common_ffi_web: ^1.1.2
   path: ^1.9.0
   path_provider: ^2.1.3
 

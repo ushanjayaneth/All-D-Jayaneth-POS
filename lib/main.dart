@@ -1,8 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'data/db_init.dart';
 import 'theme/app_theme.dart';
 import 'providers/pos_provider.dart';
 import 'providers/product_provider.dart';
@@ -16,11 +15,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Desktop FFI database initialization (Windows, macOS, Linux)
-  // kIsWeb check prevents dart:io Platform from being called on Web
-  if (!kIsWeb) {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  }
+  // Cleanly handled via conditional imports so Web doesn't load dart:ffi
+  initializeDatabasePlatform();
 
   runApp(
     MultiProvider(

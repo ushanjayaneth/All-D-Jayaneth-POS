@@ -427,7 +427,7 @@ class _PosScreenState extends State<PosScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton.icon(
-                    icon: const Icon(Icons.shopping_bag_checkout),
+                    icon: const Icon(Icons.shopping_cart_checkout),
                     label: const Text('PAY / CHECKOUT', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                     onPressed: pos.cartItems.isEmpty
                         ? null

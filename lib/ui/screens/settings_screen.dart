@@ -95,7 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       Expanded(child: TextField(controller: _phoneCtrl, decoration: const InputDecoration(labelText: 'Contact Phone', border: OutlineInputBorder()))),
                       const SizedBox(width: 10),
-                      Expanded(child: TextField(controller: _currencyCtrl, decoration: const InputDecoration(labelText: 'Currency Symbol (e.g. Rs. or $)', border: OutlineInputBorder()))),
+                      Expanded(child: TextField(controller: _currencyCtrl, decoration: const InputDecoration(labelText: 'Currency Symbol (e.g. Rs. or \$)', border: OutlineInputBorder()))),
                     ],
                   ),
                 ],

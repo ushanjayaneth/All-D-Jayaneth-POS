@@ -37,7 +37,7 @@ class AppTheme {
       error: danger,
     ),
     textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: darkSurface,
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -60,7 +60,7 @@ class AppTheme {
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: darkSurface,
       indicatorColor: primary.withOpacity(0.2),
-      labelTextStyle: MaterialStateProperty.all(
+      labelTextStyle: WidgetStateProperty.all(
         const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
       ),
     ),
@@ -88,7 +88,7 @@ class AppTheme {
       error: danger,
     ),
     textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: lightSurface,
       elevation: 1,
       shape: RoundedRectangleBorder(
@@ -111,7 +111,7 @@ class AppTheme {
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: lightSurface,
       indicatorColor: primaryDark.withOpacity(0.15),
-      labelTextStyle: MaterialStateProperty.all(
+      labelTextStyle: WidgetStateProperty.all(
         const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
       ),
     ),

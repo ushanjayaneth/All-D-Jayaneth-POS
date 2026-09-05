@@ -130,7 +130,8 @@ jobs:
 
       - name: Zip macOS bundle
         run: |
-          zip -r JayanethPOS-macOS.zip build/macos/Build/Products/Release/all_in_one_pos.app
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../JayanethPOS-macOS.zip *.app
 
       - uses: actions/upload-artifact@v4
         with:
@@ -157,7 +158,7 @@ jobs:
           cp -r /tmp/scaffold/web ./web
 
       - run: flutter pub get
-      - run: flutter build web --release --web-renderer canvaskit
+      - run: flutter build web --release
 
       - uses: actions/upload-artifact@v4
         with:

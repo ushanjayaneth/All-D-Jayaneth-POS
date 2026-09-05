@@ -1,8 +1,7 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../models/product.dart';
 import '../models/category.dart';
@@ -22,15 +21,9 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB(String filePath) async {
-    // Cross-platform FFI initialization — skip on Web (sqflite_common_ffi not needed)
-    if (!kIsWeb) {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    }
-
     String path;
     if (kIsWeb) {
-      path = filePath;
+      path = inMemoryDatabasePath;
     } else {
       final dbFolder = await getApplicationDocumentsDirectory();
       path = join(dbFolder.path, filePath);
