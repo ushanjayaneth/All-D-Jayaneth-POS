@@ -1,8 +1,7 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:csv/csv.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:open_file/open_file.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/sale.dart';
 import '../models/product.dart';
 
@@ -43,11 +42,7 @@ class CsvExportService {
     }
 
     final csvData = const ListToCsvConverter().convert(rows);
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/Sales_Report_${DateTime.now().millisecondsSinceEpoch}.csv');
-    await file.writeAsString(csvData);
-    await OpenFile.open(file.path);
-    return file.path;
+    return await _saveFile('Sales_Report_${DateTime.now().millisecondsSinceEpoch}.csv', csvData);
   }
 
   static Future<String> exportProductsToCsv(List<Product> products) async {
@@ -77,10 +72,34 @@ class CsvExportService {
     }
 
     final csvData = const ListToCsvConverter().convert(rows);
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/Products_Stock_${DateTime.now().millisecondsSinceEpoch}.csv');
-    await file.writeAsString(csvData);
-    await OpenFile.open(file.path);
-    return file.path;
+    return await _saveFile('Products_Stock_${DateTime.now().millisecondsSinceEpoch}.csv', csvData);
+  }
+
+  /// Cross-platform file save: uses FilePicker on all platforms
+  static Future<String> _saveFile(String fileName, String content) async {
+    try {
+      final bytes = Uint8List.fromList(content.codeUnits);
+
+      if (kIsWeb) {
+        // On Web, use FilePicker saveFile which triggers browser download
+        final result = await FilePicker.platform.saveFile(
+          dialogTitle: 'Save CSV File',
+          fileName: fileName,
+          bytes: bytes,
+        );
+        return result ?? 'Download triggered';
+      } else {
+        // On Desktop/Mobile, show save dialog
+        final result = await FilePicker.platform.saveFile(
+          dialogTitle: 'Save CSV File',
+          fileName: fileName,
+          bytes: bytes,
+        );
+        return result ?? 'File saved';
+      }
+    } catch (e) {
+      debugPrint('CSV Export error: $e');
+      return 'Export failed: $e';
+    }
   }
 }

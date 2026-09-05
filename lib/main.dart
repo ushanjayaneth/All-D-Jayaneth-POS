@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +16,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Desktop FFI database initialization (Windows, macOS, Linux)
-  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+  // kIsWeb check prevents dart:io Platform from being called on Web
+  if (!kIsWeb) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }

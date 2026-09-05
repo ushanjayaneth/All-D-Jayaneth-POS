@@ -34,7 +34,6 @@ dependencies:
   # File Handling & Exporting
   csv: ^6.0.0
   file_picker: ^8.0.0+1
-  open_file: ^3.3.2
 
   # Web & WhatsApp Integration
   url_launcher: ^6.3.0

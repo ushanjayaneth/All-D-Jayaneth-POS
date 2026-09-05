@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -23,8 +22,8 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB(String filePath) async {
-    // Cross-platform FFI initialization for Windows/macOS/Linux
-    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    // Cross-platform FFI initialization — skip on Web (sqflite_common_ffi not needed)
+    if (!kIsWeb) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
