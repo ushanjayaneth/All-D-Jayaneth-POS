@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Category;
 import '../models/product.dart';
 import '../models/stock_batch.dart';
 import '../models/category.dart';
