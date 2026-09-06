@@ -253,6 +253,8 @@ class PosProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> restoreHeldBill(HeldBill bill) => resumeHeldBill(bill);
+
   Future<void> deleteHeldBill(int id) async {
     await _repository.deleteHeldBill(id);
     await loadHeldBills();

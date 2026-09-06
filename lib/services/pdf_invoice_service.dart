@@ -187,9 +187,9 @@ class PdfInvoiceService {
                               'Payment Method:', sale.paymentMethod.toUpperCase()),
                           if (sale.paymentMethod == 'cash') ...[
                             _pdfSummaryRow('Paid:',
-                                '${settings.currency} ${sale.paidAmount.toStringAsFixed(2)}'),
+                                '${settings.currency} ${(sale.paidAmount ?? 0.0).toStringAsFixed(2)}'),
                             _pdfSummaryRow('Change:',
-                                '${settings.currency} ${sale.changeAmount.toStringAsFixed(2)}'),
+                                '${settings.currency} ${(sale.changeAmount ?? 0.0).toStringAsFixed(2)}'),
                           ],
                         ],
                       ),

@@ -10,6 +10,7 @@ import '../../providers/customer_provider.dart';
 import '../../services/backup_service.dart';
 import '../../services/firebase_sync_service.dart';
 import '../../services/pdf_invoice_service.dart';
+import '../../services/printer_service.dart';
 import '../../theme/app_theme.dart';
 import '../../models/sale.dart';
 import '../../models/cart_item.dart';
@@ -624,7 +625,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       createdAt: DateTime.now().millisecondsSinceEpoch,
     );
 
-    await PdfInvoiceService.printReceipt(testSale, settings);
+    await PrinterService.instance.printReceipt(sale: testSale, settings: settings);
   }
 
   Future<void> _exportJsonBackup(BuildContext context) async {

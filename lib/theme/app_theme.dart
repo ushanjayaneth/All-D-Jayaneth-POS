@@ -59,7 +59,7 @@ class AppTheme {
         side: const BorderSide(color: cardBorder, width: 1),
       ),
     ),
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       backgroundColor: cyberBgSecondary,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),

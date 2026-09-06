@@ -51,7 +51,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               decoration: BoxDecoration(
                 color: AppTheme.neonCyan.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.parseBorder(Border.all(color: AppTheme.neonCyan.withOpacity(0.3))),
+                border: Border.all(color: AppTheme.neonCyan.withOpacity(0.3)),
               ),
               child: Text(
                 '${productProv.products.length} Items',

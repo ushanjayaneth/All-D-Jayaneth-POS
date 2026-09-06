@@ -149,14 +149,14 @@ class PrinterService {
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
                       pw.Text('Cash Paid:', style: const pw.TextStyle(fontSize: 8)),
-                      pw.Text('${settings.currency} ${sale.paidAmount.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 8)),
+                      pw.Text('${settings.currency} ${(sale.paidAmount ?? 0.0).toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 8)),
                     ],
                   ),
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
                       pw.Text('Change Due:', style: const pw.TextStyle(fontSize: 8)),
-                      pw.Text('${settings.currency} ${sale.changeAmount.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 8)),
+                      pw.Text('${settings.currency} ${(sale.changeAmount ?? 0.0).toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 8)),
                     ],
                   ),
                 ],

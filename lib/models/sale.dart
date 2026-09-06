@@ -45,6 +45,9 @@ class Sale {
     return items.fold<double>(0.0, (sum, i) => sum + (i.costPrice * i.qty));
   }
 
+  double get totalCost => costTotal;
+  double get profit => total - totalCost;
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

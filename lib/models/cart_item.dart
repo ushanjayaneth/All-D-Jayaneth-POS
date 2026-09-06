@@ -15,13 +15,15 @@ class CartItem {
     required this.name,
     required this.price,
     this.costPrice = 0.0,
-    required this.qty,
-    required this.subtotal,
+    double? qty,
+    double? quantity,
+    double? subtotal,
     this.mode = 'retail',
     this.batchId,
     this.batchLabel,
     this.imageBase64,
-  });
+  })  : qty = qty ?? quantity ?? 1.0,
+        subtotal = subtotal ?? (price * (qty ?? quantity ?? 1.0));
 
   Map<String, dynamic> toMap() {
     return {
