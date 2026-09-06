@@ -35,7 +35,7 @@ class CustomerProvider extends ChangeNotifier {
   }
 
   Future<bool> saveCustomer(Customer customer) async {
-    if (customer.id > 0) {
+    if (customer.id != null && customer.id! > 0) {
       await _repo.updateCustomer(customer);
     } else {
       await _repo.insertCustomer(customer);

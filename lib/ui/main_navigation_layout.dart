@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/pos_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/sync_provider.dart';
+import '../theme/app_theme.dart';
 import 'screens/pos_screen.dart';
 import 'screens/products_screen.dart';
 import 'screens/categories_screen.dart';
@@ -19,11 +21,24 @@ class MainNavigationLayout extends StatefulWidget {
   const MainNavigationLayout({Key? key}) : super(key: key);
 
   @override
-  State<MainNavigationLayout> createState() => _MainNavigationLayoutState();
+  State<MainNavigationLayout> createState() => MainNavigationLayoutState();
+
+  static MainNavigationLayoutState? of(BuildContext context) {
+    return context.findAncestorStateOfType<MainNavigationLayoutState>();
+  }
 }
 
-class _MainNavigationLayoutState extends State<MainNavigationLayout> {
-  int _selectedIndex = 0;
+class MainNavigationLayoutState extends State<MainNavigationLayout> {
+  int selectedIndex = 0;
+  final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+
+  void navigateTo(int index) {
+    setState(() => selectedIndex = index);
+  }
+
+  void openDrawer() {
+    scaffoldKey.currentState?.openDrawer();
+  }
 
   final List<Widget> _screens = const [
     PosScreen(),
@@ -45,165 +60,206 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
     final isDesktop = MediaQuery.of(context).size.width > 900;
     final pos = Provider.of<PosProvider>(context);
     final settings = Provider.of<SettingsProvider>(context).settings;
+    final sync = Provider.of<SyncProvider>(context);
 
-    if (isDesktop) {
-      return Scaffold(
-        body: Row(
-          children: [
-            NavigationRail(
-              extended: MediaQuery.of(context).size.width > 1200,
-              minExtendedWidth: 200,
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (idx) => setState(() => _selectedIndex = idx),
-              leading: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(Icons.point_of_sale, size: 28, color: Theme.of(context).primaryColor),
-                    ),
-                    if (MediaQuery.of(context).size.width > 1200) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        settings.storeName,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              destinations: [
-                const NavigationRailDestination(icon: Icon(Icons.point_of_sale), label: Text('POS Billing')),
-                const NavigationRailDestination(icon: Icon(Icons.inventory_2), label: Text('Products')),
-                const NavigationRailDestination(icon: Icon(Icons.category), label: Text('Categories')),
-                const NavigationRailDestination(icon: Icon(Icons.people), label: Text('Customers')),
-                NavigationRailDestination(
-                  icon: Badge(
-                    label: Text('${pos.heldBills.length}'),
-                    isLabelVisible: pos.heldBills.isNotEmpty,
-                    child: const Icon(Icons.pause_circle_outline),
-                  ),
-                  label: const Text('Held Bills'),
-                ),
-                const NavigationRailDestination(icon: Icon(Icons.history), label: Text('Sales History')),
-                const NavigationRailDestination(icon: Icon(Icons.insights), label: Text('Reports & Profit')),
-                const NavigationRailDestination(icon: Icon(Icons.wb_twilight), label: Text('Day End')),
-                const NavigationRailDestination(icon: Icon(Icons.build), label: Text('Repairs')),
-                const NavigationRailDestination(icon: Icon(Icons.assignment_return), label: Text('Returns')),
-                const NavigationRailDestination(icon: Icon(Icons.qr_code_2), label: Text('Barcodes')),
-                const NavigationRailDestination(icon: Icon(Icons.settings), label: Text('Settings')),
-              ],
-            ),
-            const VerticalDivider(width: 1),
-            Expanded(child: _screens[_selectedIndex]),
-          ],
-        ),
-      );
-    }
-
-    // Mobile Bottom Navigation
     return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex > 4 ? 0 : _selectedIndex,
-        onDestinationSelected: (idx) {
-          if (idx == 4) {
-            _showMoreBottomSheet(context);
-          } else {
-            setState(() => _selectedIndex = idx);
-          }
-        },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.point_of_sale), label: 'POS'),
-          NavigationDestination(icon: Icon(Icons.inventory_2), label: 'Products'),
-          NavigationDestination(icon: Icon(Icons.people), label: 'Customers'),
-          NavigationDestination(icon: Icon(Icons.insights), label: 'Reports'),
-          NavigationDestination(icon: Icon(Icons.menu), label: 'More'),
+      key: scaffoldKey,
+      drawer: _buildDrawer(context, settings.storeName, sync.isOnline, pos.heldBills.length),
+      body: Row(
+        children: [
+          if (isDesktop) ...[
+            _buildDesktopRail(context, settings.storeName, sync.isOnline, pos.heldBills.length),
+            const VerticalDivider(width: 1, color: AppTheme.cardBorder),
+          ],
+          Expanded(child: _screens[selectedIndex]),
         ],
       ),
     );
   }
 
-  void _showMoreBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => SafeArea(
-        child: Wrap(
+  Widget _buildDrawer(BuildContext context, String storeName, bool isOnline, int heldBillsCount) {
+    final drawerItems = [
+      _DrawerEntry(0, '🏪 POS (Sales)', Icons.point_of_sale),
+      _DrawerEntry(1, '📦 Products (Inventory)', Icons.inventory_2),
+      _DrawerEntry(2, '🏷️ Categories', Icons.category),
+      _DrawerEntry(3, '👥 Customers & Loans', Icons.people),
+      _DrawerEntry(4, '⏸ Held Bills', Icons.pause_circle_outline, badge: heldBillsCount > 0 ? '$heldBillsCount' : null),
+      _DrawerEntry(5, '📜 Sales History', Icons.history),
+      _DrawerEntry(6, '📊 Reports & Stats', Icons.insights),
+      _DrawerEntry(7, '💰 Day End & Expenses', Icons.wb_twilight),
+      _DrawerEntry(8, '🔧 Repairs', Icons.build),
+      _DrawerEntry(9, '🔄 Returns', Icons.assignment_return),
+      _DrawerEntry(10, '🏷️ Barcodes', Icons.qr_code_2),
+      _DrawerEntry(11, '⚙️ Settings', Icons.settings),
+    ];
+
+    return Drawer(
+      backgroundColor: AppTheme.cyberBgSecondary,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ListTile(
-              leading: const Icon(Icons.category),
-              title: const Text('Categories'),
-              onTap: () {
-                Navigator.pop(ctx);
-                setState(() => _selectedIndex = 2);
-              },
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.neonCyan.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppTheme.neonCyan.withOpacity(0.4)),
+                        ),
+                        child: const Icon(Icons.point_of_sale, color: AppTheme.neonCyan, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              storeName,
+                              style: const TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 16),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isOnline ? AppTheme.greenSuccess : AppTheme.redDanger,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  isOnline ? 'Online Sync' : 'Offline Mode',
+                                  style: const TextStyle(color: AppTheme.slateText, fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.pause_circle_outline),
-              title: const Text('Held Bills'),
-              onTap: () {
-                Navigator.pop(ctx);
-                setState(() => _selectedIndex = 4);
-              },
+            const Divider(color: AppTheme.cardBorder, height: 1),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                children: drawerItems.map((item) {
+                  final isSelected = selectedIndex == item.index;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppTheme.neonCyan.withOpacity(0.12) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected ? AppTheme.neonCyan.withOpacity(0.3) : Colors.transparent,
+                      ),
+                    ),
+                    child: ListTile(
+                      dense: true,
+                      leading: Icon(item.icon, color: isSelected ? AppTheme.neonCyan : AppTheme.slateText, size: 20),
+                      title: Text(
+                        item.title,
+                        style: TextStyle(
+                          color: isSelected ? AppTheme.neonCyan : AppTheme.lightText,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 13,
+                        ),
+                      ),
+                      trailing: item.badge != null
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppTheme.orangeWarning,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                item.badge!,
+                                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11),
+                              ),
+                            )
+                          : null,
+                      onTap: () {
+                        Navigator.pop(context);
+                        navigateTo(item.index);
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('Sales History'),
-              onTap: () {
-                Navigator.pop(ctx);
-                setState(() => _selectedIndex = 5);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.wb_twilight),
-              title: const Text('Day End Settlement'),
-              onTap: () {
-                Navigator.pop(ctx);
-                setState(() => _selectedIndex = 7);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.build),
-              title: const Text('Repairs Management'),
-              onTap: () {
-                Navigator.pop(ctx);
-                setState(() => _selectedIndex = 8);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.assignment_return),
-              title: const Text('Returns & Refunds'),
-              onTap: () {
-                Navigator.pop(ctx);
-                setState(() => _selectedIndex = 9);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.qr_code_2),
-              title: const Text('Barcode Labels'),
-              onTap: () {
-                Navigator.pop(ctx);
-                setState(() => _selectedIndex = 10);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Settings'),
-              onTap: () {
-                Navigator.pop(ctx);
-                setState(() => _selectedIndex = 11);
-              },
+            const Divider(color: AppTheme.cardBorder, height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'MY POS • v1.0.0',
+                style: TextStyle(color: AppTheme.dimText.withOpacity(0.7), fontSize: 11),
+              ),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildDesktopRail(BuildContext context, String storeName, bool isOnline, int heldBillsCount) {
+    return NavigationRail(
+      backgroundColor: AppTheme.cyberBgSecondary,
+      selectedIndex: selectedIndex,
+      onDestinationSelected: (idx) => navigateTo(idx),
+      leading: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppTheme.neonCyan.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.point_of_sale, color: AppTheme.neonCyan, size: 24),
+        ),
+      ),
+      destinations: [
+        const NavigationRailDestination(icon: Icon(Icons.point_of_sale), label: Text('POS')),
+        const NavigationRailDestination(icon: Icon(Icons.inventory_2), label: Text('Products')),
+        const NavigationRailDestination(icon: Icon(Icons.category), label: Text('Categories')),
+        const NavigationRailDestination(icon: Icon(Icons.people), label: Text('Customers')),
+        NavigationRailDestination(
+          icon: Badge(
+            isLabelVisible: heldBillsCount > 0,
+            label: Text('$heldBillsCount'),
+            child: const Icon(Icons.pause_circle_outline),
+          ),
+          label: const Text('Held Bills'),
+        ),
+        const NavigationRailDestination(icon: Icon(Icons.history), label: Text('History')),
+        const NavigationRailDestination(icon: Icon(Icons.insights), label: Text('Reports')),
+        const NavigationRailDestination(icon: Icon(Icons.wb_twilight), label: Text('Day End')),
+        const NavigationRailDestination(icon: Icon(Icons.build), label: Text('Repairs')),
+        const NavigationRailDestination(icon: Icon(Icons.assignment_return), label: Text('Returns')),
+        const NavigationRailDestination(icon: Icon(Icons.qr_code_2), label: Text('Barcodes')),
+        const NavigationRailDestination(icon: Icon(Icons.settings), label: Text('Settings')),
+      ],
+    );
+  }
+}
+
+class _DrawerEntry {
+  final int index;
+  final String title;
+  final IconData icon;
+  final String? badge;
+
+  _DrawerEntry(this.index, this.title, this.icon, {this.badge});
 }

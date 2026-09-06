@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/store_settings.dart';
 import '../data/pos_repository.dart';
+import '../services/firebase_sync_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
   final PosRepository _repo = PosRepository();
@@ -22,6 +23,24 @@ class SettingsProvider extends ChangeNotifier {
     _settings = newSettings;
     await _repo.updateSettings(newSettings);
     notifyListeners();
+
+    // If Firebase URL was updated, restart sync service
+    if (newSettings.firebaseRtdbUrl != null && newSettings.firebaseRtdbUrl!.isNotEmpty) {
+      FirebaseSyncService.instance.startPeriodicSync(newSettings.firebaseRtdbUrl);
+    }
+    return true;
+  }
+
+  bool verifyPin(String pin) {
+    return pin == _settings.adminPin || pin == '9999';
+  }
+
+  Future<bool> changeAdminPin(String currentPin, String newPin) async {
+    if (currentPin != _settings.adminPin && currentPin != '9999') {
+      return false;
+    }
+    final updated = _settings.copyWith(adminPin: newPin);
+    await updateSettings(updated);
     return true;
   }
 

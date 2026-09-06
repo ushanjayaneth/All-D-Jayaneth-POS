@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import '../models/product.dart';
+import '../models/stock_batch.dart';
 import '../models/category.dart';
 import '../models/sale.dart';
 import '../models/held_bill.dart';
@@ -35,11 +37,44 @@ class PosRepository {
     return await db.delete('products', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<void> updateProductStock(int productId, int qtyChange) async {
+  Future<void> updateProductStock(int productId, double qtyChange, {String? batchId}) async {
     final db = await _dbHelper.database;
-    await db.rawUpdate(
-      'UPDATE products SET stock = MAX(0, stock + ?) WHERE id = ?',
-      [qtyChange, productId],
+    final res = await db.query('products', where: 'id = ?', whereArgs: [productId]);
+    if (res.isEmpty) return;
+
+    final prod = Product.fromMap(res.first);
+    final batches = List<StockBatch>.from(prod.stockBatches);
+
+    if (batches.isNotEmpty) {
+      if (batchId != null) {
+        final bIndex = batches.indexWhere((b) => b.batchId == batchId);
+        if (bIndex != -1) {
+          batches[bIndex].quantity = (batches[bIndex].quantity + qtyChange).clamp(0.0, 999999.0);
+        }
+      } else {
+        // Deduct FIFO
+        double remainingToDeduct = -qtyChange;
+        for (var b in batches) {
+          if (remainingToDeduct <= 0) break;
+          if (b.quantity > 0) {
+            double used = b.quantity.clamp(0.0, remainingToDeduct);
+            b.quantity -= used;
+            remainingToDeduct -= used;
+          }
+        }
+      }
+    }
+
+    final newStock = (prod.stock + qtyChange.toInt()).clamp(0, 999999);
+    await db.update(
+      'products',
+      {
+        'stock': newStock,
+        'stock_batches_json': jsonEncode(batches.map((b) => b.toMap()).toList()),
+        'synced': 0,
+      },
+      where: 'id = ?',
+      whereArgs: [productId],
     );
   }
 
@@ -81,16 +116,16 @@ class PosRepository {
   Future<int> insertSale(Sale sale) async {
     final db = await _dbHelper.database;
     final id = await db.insert('sales', sale.toMap());
-    
-    // Deduct stock for sold items
+
+    // Deduct stock for sold items from their respective batches
     for (var item in sale.items) {
-      await updateProductStock(item.productId, -item.qty);
+      await updateProductStock(item.productId, -item.qty, batchId: item.batchId);
     }
 
-    // If Credit sale, update customer due balance
-    if (sale.paymentMethod == 'credit' && sale.customerId != null) {
+    // If Loan/Credit sale, update customer due balance
+    if ((sale.paymentMethod == 'loan' || sale.paymentMethod == 'credit') && sale.customerId != null) {
       await db.rawUpdate(
-        'UPDATE customers SET total_due = total_due + ? WHERE id = ?',
+        'UPDATE customers SET total_due = total_due + ?, synced = 0 WHERE id = ?',
         [sale.total, sale.customerId],
       );
     }
@@ -139,7 +174,7 @@ class PosRepository {
   Future<void> collectCustomerPayment(int customerId, double amount) async {
     final db = await _dbHelper.database;
     await db.rawUpdate(
-      'UPDATE customers SET total_due = MAX(0.0, total_due - ?) WHERE id = ?',
+      'UPDATE customers SET total_due = MAX(0.0, total_due - ?), synced = 0 WHERE id = ?',
       [amount, customerId],
     );
   }
@@ -202,7 +237,7 @@ class PosRepository {
 
     // Replenish stock for returned items
     for (var item in returnBill.returnedItems) {
-      await updateProductStock(item.productId, item.qty);
+      await updateProductStock(item.productId, item.qty, batchId: item.batchId);
     }
     return id;
   }

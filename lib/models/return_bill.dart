@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'cart_item.dart';
 
 class ReturnBill {
-  final int id;
+  final int? id;
   final String saleBillNo;
   final List<CartItem> returnedItems;
   final double refundAmount;
@@ -10,7 +10,7 @@ class ReturnBill {
   final int createdAt;
 
   ReturnBill({
-    this.id = 0,
+    this.id,
     required this.saleBillNo,
     required this.returnedItems,
     required this.refundAmount,
@@ -20,9 +20,9 @@ class ReturnBill {
 
   Map<String, dynamic> toMap() {
     return {
-      if (id > 0) 'id': id,
+      'id': id,
       'sale_bill_no': saleBillNo,
-      'returned_items_json': jsonEncode(returnedItems.map((e) => e.toMap()).toList()),
+      'returned_items_json': jsonEncode(returnedItems.map((i) => i.toMap()).toList()),
       'refund_amount': refundAmount,
       'reason': reason,
       'created_at': createdAt,
@@ -30,20 +30,23 @@ class ReturnBill {
   }
 
   factory ReturnBill.fromMap(Map<String, dynamic> map) {
-    List<CartItem> parsedItems = [];
+    List<CartItem> items = [];
     if (map['returned_items_json'] != null) {
       try {
-        final List<dynamic> list = jsonDecode(map['returned_items_json']);
-        parsedItems = list.map((item) => CartItem.fromMap(item)).toList();
+        final decoded = jsonDecode(map['returned_items_json'].toString());
+        if (decoded is List) {
+          items = decoded.map((e) => CartItem.fromMap(e as Map<String, dynamic>)).toList();
+        }
       } catch (_) {}
     }
+
     return ReturnBill(
-      id: map['id'] ?? 0,
-      saleBillNo: map['sale_bill_no'] ?? '',
-      returnedItems: parsedItems,
-      refundAmount: (map['refund_amount'] as num?)?.toDouble() ?? 0.0,
-      reason: map['reason'],
-      createdAt: map['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
+      id: map['id'] as int?,
+      saleBillNo: map['sale_bill_no']?.toString() ?? map['saleBillNo']?.toString() ?? '',
+      returnedItems: items,
+      refundAmount: (map['refund_amount'] as num?)?.toDouble() ?? (map['refundAmount'] as num?)?.toDouble() ?? 0.0,
+      reason: map['reason']?.toString(),
+      createdAt: (map['created_at'] as num?)?.toInt() ?? (map['createdAt'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
     );
   }
 }

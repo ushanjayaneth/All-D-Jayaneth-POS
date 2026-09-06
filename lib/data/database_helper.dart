@@ -3,9 +3,6 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../models/product.dart';
-import '../models/category.dart';
-import '../models/customer.dart';
 import '../models/store_settings.dart';
 
 class DatabaseHelper {
@@ -16,7 +13,7 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('pos_database.db');
+    _database = await _initDB('jayaneth_pos.db');
     return _database!;
   }
 
@@ -31,8 +28,9 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
   }
 
@@ -47,8 +45,15 @@ class DatabaseHelper {
         retail_price REAL NOT NULL,
         wsale_price REAL,
         cost_price REAL NOT NULL DEFAULT 0.0,
+        old_stock_price REAL,
+        new_stock_price REAL,
         stock INTEGER NOT NULL DEFAULT 0,
-        description TEXT
+        description TEXT,
+        image_base64 TEXT,
+        unit TEXT DEFAULT 'pcs',
+        stock_batches_json TEXT,
+        sync_id TEXT,
+        synced INTEGER DEFAULT 0
       )
     ''');
 
@@ -59,7 +64,9 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         icon TEXT,
         color TEXT,
-        sort_order INTEGER DEFAULT 0
+        sort_order INTEGER DEFAULT 0,
+        sync_id TEXT,
+        synced INTEGER DEFAULT 0
       )
     ''');
 
@@ -79,7 +86,10 @@ class DatabaseHelper {
         customer_id INTEGER,
         customer_name TEXT,
         cashier_name TEXT,
-        created_at INTEGER NOT NULL
+        device_id TEXT,
+        created_at INTEGER NOT NULL,
+        sync_id TEXT,
+        synced INTEGER DEFAULT 0
       )
     ''');
 
@@ -95,6 +105,8 @@ class DatabaseHelper {
         items_json TEXT NOT NULL,
         customer_id INTEGER,
         customer_name TEXT,
+        cashier_name TEXT,
+        device_id TEXT,
         created_at INTEGER NOT NULL
       )
     ''');
@@ -106,7 +118,9 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         phone TEXT,
         address TEXT,
-        total_due REAL DEFAULT 0.0
+        total_due REAL DEFAULT 0.0,
+        sync_id TEXT,
+        synced INTEGER DEFAULT 0
       )
     ''');
 
@@ -115,7 +129,7 @@ class DatabaseHelper {
       CREATE TABLE expenses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         amount REAL NOT NULL,
-        description TEXT NOT NULL,
+        description TEXT,
         category TEXT NOT NULL,
         created_at INTEGER NOT NULL
       )
@@ -160,81 +174,48 @@ class DatabaseHelper {
         receipt_footer TEXT,
         printer_type TEXT DEFAULT 'system',
         paper_size TEXT DEFAULT '80mm',
-        is_dark_mode INTEGER DEFAULT 1
+        is_dark_mode INTEGER DEFAULT 1,
+        admin_pin TEXT DEFAULT '1234',
+        low_stock_alert INTEGER DEFAULT 5,
+        firebase_rtdb_url TEXT,
+        auto_print INTEGER DEFAULT 1
       )
     ''');
 
-    // Seed Initial Demo / Sample Data
-    await _seedInitialData(db);
+    // Insert initial default settings row
+    await db.insert('settings', StoreSettings().toMap());
+    // NOTE: Zero dummy products or categories inserted as requested by user.
   }
 
-  Future<void> _seedInitialData(Database db) async {
-    // Default Settings
-    await db.insert('settings', StoreSettings().toMap());
-
-    // Default Categories
-    final cat1 = await db.insert('categories', Category(name: 'General', icon: 'tag', color: '#00D4FF').toMap());
-    final cat2 = await db.insert('categories', Category(name: 'Electronics', icon: 'smartphone', color: '#6366F1').toMap());
-    final cat3 = await db.insert('categories', Category(name: 'Accessories', icon: 'headphones', color: '#10B981').toMap());
-
-    // Default Products
-    await db.insert('products', Product(
-      barcode: '8901234567890',
-      name: 'USB-C Fast Cable 1m',
-      categoryId: cat3,
-      retailPrice: 850.0,
-      wsalePrice: 650.0,
-      costPrice: 400.0,
-      stock: 45,
-      description: 'High quality braided 60W cable',
-    ).toMap());
-
-    await db.insert('products', Product(
-      barcode: '8901234567891',
-      name: 'Wireless Earbuds TWS Pro',
-      categoryId: cat2,
-      retailPrice: 3500.0,
-      wsalePrice: 2800.0,
-      costPrice: 2000.0,
-      stock: 18,
-      description: 'Bluetooth 5.3 earbuds with ENC',
-    ).toMap());
-
-    await db.insert('products', Product(
-      barcode: '8901234567892',
-      name: '20W PD Fast Charger Adapter',
-      categoryId: cat2,
-      retailPrice: 1650.0,
-      wsalePrice: 1300.0,
-      costPrice: 850.0,
-      stock: 25,
-      description: 'Dual port Type-C & USB charger',
-    ).toMap());
-
-    await db.insert('products', Product(
-      barcode: '8901234567893',
-      name: 'Tempered Glass Screen Guard',
-      categoryId: cat3,
-      retailPrice: 500.0,
-      wsalePrice: 300.0,
-      costPrice: 150.0,
-      stock: 100,
-      description: '9H hardness full glue guard',
-    ).toMap());
-
-    // Default Customers
-    await db.insert('customers', Customer(
-      name: 'Kamal Perera',
-      phone: '0771234567',
-      address: 'Kandy Road, Colombo',
-      totalDue: 1500.0,
-    ).toMap());
-
-    await db.insert('customers', Customer(
-      name: 'Nimal Silva (Wholesale)',
-      phone: '0719876543',
-      address: 'Main Market, Negombo',
-      totalDue: 0.0,
-    ).toMap());
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      try {
+        await db.execute("ALTER TABLE products ADD COLUMN old_stock_price REAL");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE products ADD COLUMN new_stock_price REAL");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE products ADD COLUMN image_base64 TEXT");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE products ADD COLUMN unit TEXT DEFAULT 'pcs'");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE products ADD COLUMN stock_batches_json TEXT");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE settings ADD COLUMN admin_pin TEXT DEFAULT '1234'");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE settings ADD COLUMN low_stock_alert INTEGER DEFAULT 5");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE settings ADD COLUMN firebase_rtdb_url TEXT");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE settings ADD COLUMN auto_print INTEGER DEFAULT 1");
+      } catch (_) {}
+    }
   }
 }

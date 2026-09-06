@@ -1,29 +1,29 @@
 class RepairJob {
-  final int id;
-  final String jobNo;
+  final int? id;
+  final String? jobNo;
   final String customerName;
   final String? customerPhone;
   final String deviceModel;
   final String issueDescription;
   final double estimatedCost;
-  final String status; // 'received', 'in_progress', 'ready', 'delivered', 'cancelled'
+  final String status; // Received, In Progress, Ready, Delivered, Cancelled
   final int createdAt;
 
   RepairJob({
-    this.id = 0,
-    required this.jobNo,
+    this.id,
+    String? jobNo,
     required this.customerName,
     this.customerPhone,
     required this.deviceModel,
     required this.issueDescription,
-    this.estimatedCost = 0.0,
-    this.status = 'received',
+    required this.estimatedCost,
+    this.status = 'Received',
     required this.createdAt,
-  });
+  }) : jobNo = jobNo ?? 'REP_${DateTime.now().millisecondsSinceEpoch % 1000000}';
 
   Map<String, dynamic> toMap() {
     return {
-      if (id > 0) 'id': id,
+      'id': id,
       'job_no': jobNo,
       'customer_name': customerName,
       'customer_phone': customerPhone,
@@ -37,15 +37,15 @@ class RepairJob {
 
   factory RepairJob.fromMap(Map<String, dynamic> map) {
     return RepairJob(
-      id: map['id'] ?? 0,
-      jobNo: map['job_no'] ?? '',
-      customerName: map['customer_name'] ?? '',
-      customerPhone: map['customer_phone'],
-      deviceModel: map['device_model'] ?? '',
-      issueDescription: map['issue_description'] ?? '',
-      estimatedCost: (map['estimated_cost'] as num?)?.toDouble() ?? 0.0,
-      status: map['status'] ?? 'received',
-      createdAt: map['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
+      id: map['id'] as int?,
+      jobNo: map['job_no']?.toString() ?? map['jobNo']?.toString(),
+      customerName: map['customer_name']?.toString() ?? map['customerName']?.toString() ?? '',
+      customerPhone: map['customer_phone']?.toString() ?? map['customerPhone']?.toString(),
+      deviceModel: map['device_model']?.toString() ?? map['deviceModel']?.toString() ?? '',
+      issueDescription: map['issue_description']?.toString() ?? map['issueDescription']?.toString() ?? '',
+      estimatedCost: (map['estimated_cost'] as num?)?.toDouble() ?? (map['estimatedCost'] as num?)?.toDouble() ?? 0.0,
+      status: map['status']?.toString() ?? 'Received',
+      createdAt: (map['created_at'] as num?)?.toInt() ?? (map['createdAt'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
     );
   }
 

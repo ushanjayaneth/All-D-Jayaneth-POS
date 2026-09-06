@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
+import '../models/stock_batch.dart';
 import '../models/category.dart';
 import '../data/pos_repository.dart';
 
@@ -20,7 +21,8 @@ class ProductProvider extends ChangeNotifier {
 
   List<Product> get filteredProducts {
     return _products.where((p) {
-      final matchesSearch = p.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+      final matchesSearch = _searchQuery.isEmpty ||
+          p.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           (p.barcode != null && p.barcode!.contains(_searchQuery));
       final matchesCategory = _selectedCategoryId == null || p.categoryId == _selectedCategoryId;
       return matchesSearch && matchesCategory;
@@ -48,14 +50,20 @@ class ProductProvider extends ChangeNotifier {
 
   Product? findByBarcode(String barcode) {
     try {
-      return _products.firstWhere((p) => p.barcode == barcode);
+      return _products.firstWhere((p) {
+        if (p.barcode == barcode) return true;
+        for (var b in p.stockBatches) {
+          if (b.barcodes.contains(barcode)) return true;
+        }
+        return false;
+      });
     } catch (_) {
       return null;
     }
   }
 
   Future<bool> saveProduct(Product product) async {
-    if (product.id > 0) {
+    if (product.id != null && product.id! > 0) {
       await _repo.updateProduct(product);
     } else {
       await _repo.insertProduct(product);
@@ -70,8 +78,23 @@ class ProductProvider extends ChangeNotifier {
     return true;
   }
 
+  Future<void> addStockBatch(int productId, StockBatch newBatch) async {
+    final prodIndex = _products.indexWhere((p) => p.id == productId);
+    if (prodIndex != -1) {
+      final prod = _products[prodIndex];
+      final batches = List<StockBatch>.from(prod.stockBatches)..add(newBatch);
+      final updatedProd = prod.copyWith(
+        stock: prod.stock + newBatch.quantity.toInt(),
+        stockBatches: batches,
+        synced: 0,
+      );
+      await _repo.updateProduct(updatedProd);
+      await loadAll();
+    }
+  }
+
   Future<bool> saveCategory(Category category) async {
-    if (category.id > 0) {
+    if (category.id != null && category.id! > 0) {
       await _repo.updateCategory(category);
     } else {
       await _repo.insertCategory(category);

@@ -36,7 +36,7 @@ class RepairsProvider extends ChangeNotifier {
   }
 
   Future<bool> saveRepair(RepairJob job) async {
-    if (job.id > 0) {
+    if (job.id != null && job.id! > 0) {
       await _repo.updateRepair(job);
     } else {
       await _repo.insertRepair(job);

@@ -42,6 +42,12 @@ dependencies:
   # Modern Typography & UI
   google_fonts: ^6.2.1
 
+  # HTTP for Cross-Platform Firebase Realtime / Firestore REST Sync
+  http: ^1.2.0
+
+  # Pure Dart Image Processing & Compression (under 100KB)
+  image: ^4.2.0
+
   # Barcode generation
   barcode_widget: ^2.0.4
 

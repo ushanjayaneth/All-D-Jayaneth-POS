@@ -9,6 +9,7 @@ import 'providers/customer_provider.dart';
 import 'providers/reports_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/repairs_provider.dart';
+import 'providers/sync_provider.dart';
 import 'ui/main_navigation_layout.dart';
 
 void main() async {
@@ -27,6 +28,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ReportsProvider()..loadReports()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()..loadSettings()),
         ChangeNotifierProvider(create: (_) => RepairsProvider()..loadAll()),
+        ChangeNotifierProvider(create: (_) => SyncProvider()),
       ],
       child: const PosApp(),
     ),
