@@ -3,6 +3,7 @@ import '../models/product.dart';
 import '../models/stock_batch.dart';
 import '../models/category.dart';
 import '../data/pos_repository.dart';
+import '../services/firebase_sync_service.dart';
 
 class ProductProvider extends ChangeNotifier {
   final PosRepository _repo = PosRepository();
@@ -36,6 +37,15 @@ class ProductProvider extends ChangeNotifier {
     _categories = await _repo.getCategories();
     _isLoading = false;
     notifyListeners();
+  }
+
+  void _triggerCloudSync() async {
+    try {
+      final settings = await _repo.getSettings();
+      if (settings.firebaseRtdbUrl != null && settings.firebaseRtdbUrl!.isNotEmpty) {
+        FirebaseSyncService.instance.syncAll(settings.firebaseRtdbUrl!);
+      }
+    } catch (_) {}
   }
 
   void setSearchQuery(String query) {
@@ -77,12 +87,14 @@ class ProductProvider extends ChangeNotifier {
       await _repo.insertProduct(product);
     }
     await loadAll();
+    _triggerCloudSync();
     return true;
   }
 
   Future<bool> deleteProduct(int id) async {
     await _repo.deleteProduct(id);
     await loadAll();
+    _triggerCloudSync();
     return true;
   }
 
@@ -98,6 +110,7 @@ class ProductProvider extends ChangeNotifier {
       );
       await _repo.updateProduct(updatedProd);
       await loadAll();
+      _triggerCloudSync();
     }
   }
 
@@ -108,12 +121,14 @@ class ProductProvider extends ChangeNotifier {
       await _repo.insertCategory(category);
     }
     await loadAll();
+    _triggerCloudSync();
     return true;
   }
 
   Future<bool> deleteCategory(int id) async {
     await _repo.deleteCategory(id);
     await loadAll();
+    _triggerCloudSync();
     return true;
   }
 }

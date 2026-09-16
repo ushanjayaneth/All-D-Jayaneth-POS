@@ -34,36 +34,33 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final productProv = Provider.of<ProductProvider>(context);
     final settings = Provider.of<SettingsProvider>(context).settings;
 
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return Scaffold(
       backgroundColor: AppTheme.cyberBg,
       appBar: AppBar(
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.inventory_2, color: AppTheme.neonCyan, size: 22),
+            const Icon(Icons.inventory_2, color: AppTheme.neonCyan, size: 20),
             const SizedBox(width: 8),
-            const Text(
-              'Products & Inventory',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppTheme.neonCyan.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.neonCyan.withOpacity(0.3)),
-              ),
+            Flexible(
               child: Text(
-                '${productProv.products.length} Items',
-                style: const TextStyle(color: AppTheme.neonCyan, fontSize: 12, fontWeight: FontWeight.bold),
+                isMobile ? 'Products' : 'Products & Inventory',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: isMobile ? 17 : 18,
+                  color: AppTheme.lightText,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            tooltip: 'Export to Excel (CSV)',
-            icon: const Icon(Icons.file_download, color: AppTheme.slateText),
+            tooltip: 'Export to CSV',
+            icon: const Icon(Icons.file_download_outlined, color: AppTheme.slateText, size: 22),
             onPressed: () async {
               await CsvExportService.exportProductsToCsv(productProv.products);
               if (mounted) {
@@ -77,13 +74,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
             },
           ),
           Padding(
-            padding: const EdgeInsets.only(right: 14.0, top: 8, bottom: 8),
+            padding: EdgeInsets.only(right: isMobile ? 10.0 : 14.0, top: 8, bottom: 8),
             child: ElevatedButton.icon(
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add Product'),
+              icon: const Icon(Icons.add, size: 16),
+              label: Text(isMobile ? 'Add' : 'Add Product'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.neonCyan,
                 foregroundColor: Colors.black,
+                padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: () => _showProductDialog(context, null),
             ),
@@ -92,27 +91,46 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ),
       body: Column(
         children: [
-          // Search Bar
+          // Search Bar + Items Count Badge
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-            child: TextField(
-              controller: _searchCtrl,
-              style: const TextStyle(color: AppTheme.lightText),
-              decoration: InputDecoration(
-                hintText: 'Search products by name, barcode, or SKU...',
-                prefixIcon: const Icon(Icons.search, color: AppTheme.neonCyan),
-                suffixIcon: _searchCtrl.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, color: AppTheme.slateText),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          productProv.setSearchQuery('');
-                        },
-                      )
-                    : null,
-                isDense: true,
-              ),
-              onChanged: (val) => productProv.setSearchQuery(val),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchCtrl,
+                    style: const TextStyle(color: AppTheme.lightText),
+                    decoration: InputDecoration(
+                      hintText: 'Search products by name, barcode...',
+                      prefixIcon: const Icon(Icons.search, color: AppTheme.neonCyan),
+                      suffixIcon: _searchCtrl.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, color: AppTheme.slateText),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                productProv.setSearchQuery('');
+                              },
+                            )
+                          : null,
+                      isDense: true,
+                    ),
+                    onChanged: (val) => productProv.setSearchQuery(val),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.neonCyan.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.neonCyan.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    '${productProv.products.length} Items',
+                    style: const TextStyle(color: AppTheme.neonCyan, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -479,6 +497,51 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
+  void _showQuickCategoryDialog(BuildContext context, Function(int?) onCreated) {
+    final nameCtrl = TextEditingController();
+    final productProv = Provider.of<ProductProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.cyberBgSecondary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: AppTheme.cardBorder)),
+        title: const Row(
+          children: [
+            Icon(Icons.category, color: AppTheme.neonCyan, size: 20),
+            SizedBox(width: 8),
+            Text('Add Category', style: TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        content: TextField(
+          controller: nameCtrl,
+          autofocus: true,
+          style: const TextStyle(color: AppTheme.lightText),
+          decoration: const InputDecoration(labelText: 'Category Name *', hintText: 'e.g. Fresh Chicken'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.slateText)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.neonCyan, foregroundColor: Colors.black),
+            onPressed: () async {
+              final name = nameCtrl.text.trim();
+              if (name.isEmpty) return;
+              final cat = Category(name: name, icon: '📦');
+              await productProv.saveCategory(cat);
+              final newlyCreated = productProv.categories.where((c) => c.name == name).firstOrNull;
+              onCreated(newlyCreated?.id);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Add / Edit Product Dialog with Image Upload (<100KB Auto Compression)
   void _showProductDialog(BuildContext context, Product? product) {
     final productProv = Provider.of<ProductProvider>(context, listen: false);
@@ -625,23 +688,52 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Category Dropdown
-                    DropdownButtonFormField<int?>(
-                      value: selectedCat,
-                      dropdownColor: AppTheme.cyberBgSecondary,
-                      style: const TextStyle(color: AppTheme.lightText),
-                      decoration: const InputDecoration(labelText: 'Category'),
-                      items: [
-                        const DropdownMenuItem<int?>(
-                          value: null,
-                          child: Text('No Category (General)', style: TextStyle(color: AppTheme.slateText)),
+                    // Category Dropdown with Quick Add (+) Button
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int?>(
+                            value: selectedCat,
+                            dropdownColor: AppTheme.cyberBgSecondary,
+                            style: const TextStyle(color: AppTheme.lightText),
+                            decoration: const InputDecoration(labelText: 'Category'),
+                            items: [
+                              const DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('No Category (General)', style: TextStyle(color: AppTheme.slateText)),
+                              ),
+                              ...productProv.categories.map((c) => DropdownMenuItem<int?>(
+                                    value: c.id,
+                                    child: Text('${c.icon ?? '📦'} ${c.name}', style: const TextStyle(color: AppTheme.lightText)),
+                                  )),
+                            ],
+                            onChanged: (v) => setDialogState(() => selectedCat = v),
+                          ),
                         ),
-                        ...productProv.categories.map((c) => DropdownMenuItem<int?>(
-                              value: c.id,
-                              child: Text('${c.icon ?? '📦'} ${c.name}', style: const TextStyle(color: AppTheme.lightText)),
-                            )),
+                        const SizedBox(width: 8),
+                        Tooltip(
+                          message: 'Create New Category',
+                          child: InkWell(
+                            onTap: () {
+                              _showQuickCategoryDialog(context, (newCatId) {
+                                setDialogState(() => selectedCat = newCatId);
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              height: 48,
+                              width: 48,
+                              decoration: BoxDecoration(
+                                color: AppTheme.cyberBgTertiary,
+                                border: Border.all(color: AppTheme.neonCyan.withOpacity(0.5)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.add, color: AppTheme.neonCyan, size: 24),
+                            ),
+                          ),
+                        ),
                       ],
-                      onChanged: (v) => setDialogState(() => selectedCat = v),
                     ),
                     const SizedBox(height: 10),
 
@@ -750,60 +842,61 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Dual Pricing (Old Stock vs New Stock)
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.cyberBgTertiary,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppTheme.cardBorder),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.history_toggle_off, color: AppTheme.orangeWarning, size: 16),
-                              SizedBox(width: 6),
-                              Text(
-                                'Batch Pricing (Old & New Stock Prices)',
-                                style: TextStyle(color: AppTheme.orangeWarning, fontSize: 12, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: oldPriceCtrl,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  style: const TextStyle(color: AppTheme.orangeWarning),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Old Stock Price',
-                                    isDense: true,
+                    // Dual Pricing (Old Stock vs New Stock) - Only for existing products with active dual pricing
+                    if (product != null && product.hasDualPricing) ...[
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.cyberBgTertiary,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppTheme.cardBorder),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.history_toggle_off, color: AppTheme.orangeWarning, size: 16),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Batch Pricing (Old & New Stock Prices)',
+                                  style: TextStyle(color: AppTheme.orangeWarning, fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: oldPriceCtrl,
+                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                    style: const TextStyle(color: AppTheme.orangeWarning),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Old Stock Price',
+                                      isDense: true,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: TextField(
-                                  controller: newPriceCtrl,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  style: const TextStyle(color: AppTheme.greenSuccess),
-                                  decoration: const InputDecoration(
-                                    labelText: 'New Stock Price',
-                                    isDense: true,
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: TextField(
+                                    controller: newPriceCtrl,
+                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                    style: const TextStyle(color: AppTheme.greenSuccess),
+                                    decoration: const InputDecoration(
+                                      labelText: 'New Stock Price',
+                                      isDense: true,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-
-                    const SizedBox(height: 10),
+                      const SizedBox(height: 10),
+                    ],
 
                     TextField(
                       controller: descCtrl,
@@ -833,8 +926,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   final retail = double.tryParse(retailCtrl.text) ?? 0.0;
                   final wsale = double.tryParse(wsaleCtrl.text);
                   final cost = double.tryParse(costCtrl.text) ?? 0.0;
-                  final oldPrice = double.tryParse(oldPriceCtrl.text);
-                  final newPrice = double.tryParse(newPriceCtrl.text);
+                  final oldPrice = (product != null && product.hasDualPricing) ? double.tryParse(oldPriceCtrl.text) : null;
+                  final newPrice = (product != null && product.hasDualPricing) ? double.tryParse(newPriceCtrl.text) : null;
                   final stock = int.tryParse(stockCtrl.text) ?? 0;
                   final lowLimit = int.tryParse(lowStockCtrl.text);
 

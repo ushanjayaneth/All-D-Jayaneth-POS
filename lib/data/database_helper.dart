@@ -28,10 +28,21 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
+      onOpen: _onOpenDB,
     );
+  }
+
+  Future<void> _onOpenDB(Database db) async {
+    // Safety check: ensure columns exist on any opened database
+    try {
+      await db.execute("ALTER TABLE products ADD COLUMN category_name TEXT");
+    } catch (_) {}
+    try {
+      await db.execute("ALTER TABLE products ADD COLUMN low_stock_limit INTEGER");
+    } catch (_) {}
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -42,12 +53,14 @@ class DatabaseHelper {
         barcode TEXT,
         name TEXT NOT NULL,
         category_id INTEGER,
+        category_name TEXT,
         retail_price REAL NOT NULL,
         wsale_price REAL,
         cost_price REAL NOT NULL DEFAULT 0.0,
         old_stock_price REAL,
         new_stock_price REAL,
         stock INTEGER NOT NULL DEFAULT 0,
+        low_stock_limit INTEGER,
         description TEXT,
         image_base64 TEXT,
         unit TEXT DEFAULT 'pcs',
@@ -215,6 +228,14 @@ class DatabaseHelper {
       } catch (_) {}
       try {
         await db.execute("ALTER TABLE settings ADD COLUMN auto_print INTEGER DEFAULT 1");
+      } catch (_) {}
+    }
+    if (oldVersion < 3) {
+      try {
+        await db.execute("ALTER TABLE products ADD COLUMN category_name TEXT");
+      } catch (_) {}
+      try {
+        await db.execute("ALTER TABLE products ADD COLUMN low_stock_limit INTEGER");
       } catch (_) {}
     }
   }
