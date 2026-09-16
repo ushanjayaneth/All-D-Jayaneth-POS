@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/product.dart';
+import '../../models/category.dart';
 import '../../models/stock_batch.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/settings_provider.dart';
