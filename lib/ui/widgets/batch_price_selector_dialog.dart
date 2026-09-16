@@ -54,81 +54,116 @@ class BatchPriceSelectorDialog extends StatelessWidget {
           ),
         ],
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'මෙම භාණ්ඩය සඳහා මිල තෝරන්න (Select Price Batch):',
-            style: TextStyle(color: AppTheme.slateText, fontSize: 12),
-          ),
-          const SizedBox(height: 16),
-
-          // Option 1: Old Stock Price (if defined)
-          if (product.oldStockPrice != null && product.oldStockPrice! > 0) ...[
-            _buildOptionCard(
-              context: context,
-              icon: Icons.history,
-              badgeColor: AppTheme.orangeWarning,
-              badgeText: '🟡 පරණ ස්ටොක් (Old Stock)',
-              priceText: '$currency ${product.oldStockPrice!.toStringAsFixed(2)}',
-              onTap: () {
-                Navigator.pop(
-                  context,
-                  BatchPriceSelection(
-                    price: product.oldStockPrice!,
-                    label: 'Old Stock',
-                    batchId: 'old_batch',
-                    costPrice: product.costPrice,
-                  ),
-                );
-              },
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Select Price Batch for this Product:',
+              style: TextStyle(color: AppTheme.slateText, fontSize: 12),
             ),
-            const SizedBox(height: 10),
-          ],
+            const SizedBox(height: 16),
 
-          // Option 2: New Stock Price (if defined)
-          if (product.newStockPrice != null && product.newStockPrice! > 0) ...[
-            _buildOptionCard(
-              context: context,
-              icon: Icons.new_releases_outlined,
-              badgeColor: AppTheme.greenSuccess,
-              badgeText: '🟢 අලුත් ස්ටොක් (New Stock)',
-              priceText: '$currency ${product.newStockPrice!.toStringAsFixed(2)}',
-              onTap: () {
-                Navigator.pop(
-                  context,
-                  BatchPriceSelection(
-                    price: product.newStockPrice!,
-                    label: 'New Stock',
-                    batchId: 'new_batch',
-                    costPrice: product.costPrice,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 10),
-          ],
+            // Option 1: Old Stock Price (if defined)
+            if (product.oldStockPrice != null && product.oldStockPrice! > 0) ...[
+              _buildOptionCard(
+                context: context,
+                icon: Icons.history,
+                badgeColor: AppTheme.orangeWarning,
+                badgeText: '🟡 Old Stock',
+                priceText: '$currency ${product.oldStockPrice!.toStringAsFixed(2)}',
+                profitText: 'Profit: $currency ${(product.oldStockPrice! - product.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
+                onTap: () {
+                  Navigator.pop(
+                    context,
+                    BatchPriceSelection(
+                      price: product.oldStockPrice!,
+                      label: 'Old Stock',
+                      batchId: 'old_batch',
+                      costPrice: product.costPrice,
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
 
-          // Option 3: Standard Default Price
-          _buildOptionCard(
-            context: context,
-            icon: Icons.sell_outlined,
-            badgeColor: AppTheme.neonCyan,
-            badgeText: saleMode == 'wholesale' ? '📦 තොග මිල (Wholesale)' : '🏪 සාමාන්‍ය මිල (Standard)',
-            priceText: '$currency ${defaultPrice.toStringAsFixed(2)}',
-            onTap: () {
-              Navigator.pop(
-                context,
-                BatchPriceSelection(
-                  price: defaultPrice,
-                  label: 'Standard',
-                  costPrice: product.costPrice,
+            // Option 2: New Stock Price (if defined)
+            if (product.newStockPrice != null && product.newStockPrice! > 0) ...[
+              _buildOptionCard(
+                context: context,
+                icon: Icons.new_releases_outlined,
+                badgeColor: AppTheme.greenSuccess,
+                badgeText: '🟢 New Stock',
+                priceText: '$currency ${product.newStockPrice!.toStringAsFixed(2)}',
+                profitText: 'Profit: $currency ${(product.newStockPrice! - product.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
+                onTap: () {
+                  Navigator.pop(
+                    context,
+                    BatchPriceSelection(
+                      price: product.newStockPrice!,
+                      label: 'New Stock',
+                      batchId: 'new_batch',
+                      costPrice: product.costPrice,
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
+
+            // Option 3: Additional Stock Batches if present
+            ...product.stockBatches.map((batch) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _buildOptionCard(
+                  context: context,
+                  icon: Icons.inventory_2_outlined,
+                  badgeColor: AppTheme.neonPurple,
+                  badgeText: '📦 ${batch.batchName} (Stock: ${batch.quantity})',
+                  priceText: '$currency ${batch.sellingPrice.toStringAsFixed(2)}',
+                  profitText: 'Profit: $currency ${(batch.sellingPrice - batch.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
+                  onTap: () {
+                    Navigator.pop(
+                      context,
+                      BatchPriceSelection(
+                        price: batch.sellingPrice,
+                        label: batch.batchName,
+                        batchId: batch.id,
+                        costPrice: batch.costPrice,
+                      ),
+                    );
+                  },
                 ),
               );
-            },
-          ),
-        ],
+            }),
+
+            // Option 4: Standard Default Price (if not already covered)
+            if ((product.oldStockPrice == null || product.oldStockPrice == 0) &&
+                (product.newStockPrice == null || product.newStockPrice == 0) &&
+                product.stockBatches.isEmpty) ...[
+              _buildOptionCard(
+                context: context,
+                icon: Icons.sell_outlined,
+                badgeColor: AppTheme.neonCyan,
+                badgeText: saleMode == 'wholesale' ? '📦 Wholesale Price' : '🏪 Standard Price',
+                priceText: '$currency ${defaultPrice.toStringAsFixed(2)}',
+                profitText: 'Profit: $currency ${(defaultPrice - product.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
+                onTap: () {
+                  Navigator.pop(
+                    context,
+                    BatchPriceSelection(
+                      price: defaultPrice,
+                      label: 'Standard',
+                      costPrice: product.costPrice,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -145,6 +180,7 @@ class BatchPriceSelectorDialog extends StatelessWidget {
     required Color badgeColor,
     required String badgeText,
     required String priceText,
+    String? profitText,
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -174,6 +210,13 @@ class BatchPriceSelectorDialog extends StatelessWidget {
                     priceText,
                     style: const TextStyle(color: AppTheme.lightText, fontSize: 16, fontWeight: FontWeight.bold),
                   ),
+                  if (profitText != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      profitText,
+                      style: const TextStyle(color: AppTheme.greenSuccess, fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ],
               ),
             ),

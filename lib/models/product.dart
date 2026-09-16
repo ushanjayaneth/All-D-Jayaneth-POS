@@ -16,6 +16,7 @@ class Product {
   final String? description;
   final String? imageBase64;
   final String unit;
+  final int? lowStockLimit;
   final List<StockBatch> stockBatches;
   final String syncId;
   final int synced;
@@ -31,6 +32,7 @@ class Product {
     this.oldStockPrice,
     this.newStockPrice,
     this.stock = 0,
+    this.lowStockLimit,
     this.description,
     this.imageBase64,
     this.unit = 'pcs',
@@ -39,6 +41,13 @@ class Product {
     this.synced = 0,
   })  : stockBatches = stockBatches ?? [],
         syncId = syncId ?? const Uuid().v4();
+
+  bool get hasDualPricing =>
+      (oldStockPrice != null && oldStockPrice! > 0) &&
+      (newStockPrice != null && newStockPrice! > 0);
+
+  int getEffectiveLowStockLimit(int globalDefault) =>
+      (lowStockLimit != null && lowStockLimit! > 0) ? lowStockLimit! : globalDefault;
 
   // Computes total stock from batches if batches exist, otherwise returns stock
   double get totalStock {
@@ -60,6 +69,7 @@ class Product {
       'old_stock_price': oldStockPrice,
       'new_stock_price': newStockPrice,
       'stock': stock,
+      'low_stock_limit': lowStockLimit,
       'description': description,
       'image_base64': imageBase64,
       'unit': unit,
@@ -100,6 +110,7 @@ class Product {
       oldStockPrice: (map['old_stock_price'] as num?)?.toDouble() ?? (map['oldPrice'] as num?)?.toDouble(),
       newStockPrice: (map['new_stock_price'] as num?)?.toDouble() ?? (map['newPrice'] as num?)?.toDouble(),
       stock: (map['stock'] as num?)?.toInt() ?? 0,
+      lowStockLimit: (map['low_stock_limit'] as num?)?.toInt() ?? (map['lowStockLimit'] as num?)?.toInt(),
       description: map['description']?.toString(),
       imageBase64: map['image_base64']?.toString() ?? map['image']?.toString(),
       unit: map['unit']?.toString() ?? 'pcs',
@@ -120,6 +131,7 @@ class Product {
     double? oldStockPrice,
     double? newStockPrice,
     int? stock,
+    int? lowStockLimit,
     String? description,
     String? imageBase64,
     String? unit,
@@ -138,6 +150,7 @@ class Product {
       oldStockPrice: oldStockPrice ?? this.oldStockPrice,
       newStockPrice: newStockPrice ?? this.newStockPrice,
       stock: stock ?? this.stock,
+      lowStockLimit: lowStockLimit ?? this.lowStockLimit,
       description: description ?? this.description,
       imageBase64: imageBase64 ?? this.imageBase64,
       unit: unit ?? this.unit,

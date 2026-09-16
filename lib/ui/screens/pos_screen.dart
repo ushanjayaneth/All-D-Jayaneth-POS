@@ -133,10 +133,14 @@ class _PosScreenState extends State<PosScreen> {
     dynamic settings,
     SyncProvider sync,
   ) {
+    final storeName = settings.storeName.isNotEmpty ? settings.storeName : 'Jayaneth Demo';
+    final cashier = pos.currentDeviceInfo?.cashier ?? "Cashier 1";
+    final counter = pos.currentDeviceInfo?.devName ?? "Counter A";
+
     return AppBar(
       backgroundColor: AppTheme.cyberBg,
       leading: IconButton(
-        icon: const Icon(Icons.menu, color: AppTheme.neonCyan),
+        icon: const Icon(Icons.menu, color: AppTheme.lightText),
         onPressed: () {
           MainNavigationLayout.of(context)?.openDrawer();
         },
@@ -145,34 +149,16 @@ class _PosScreenState extends State<PosScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            settings.storeName,
-            style: const TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 16),
+            storeName,
+            style: const TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 17),
           ),
           Text(
-            '${pos.currentDeviceInfo?.cashier ?? "Cashier"} · ${pos.currentDeviceInfo?.devName ?? "Counter"}',
-            style: const TextStyle(color: AppTheme.slateText, fontSize: 11),
+            '$cashier · $counter',
+            style: const TextStyle(color: AppTheme.dimText, fontSize: 11.5),
           ),
         ],
       ),
       actions: [
-        // Mode switch pills (Retail vs Wholesale)
-        Container(
-          margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          decoration: BoxDecoration(
-            color: AppTheme.cyberBgTertiary,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppTheme.cardBorder),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildModePill('Retail', 'retail', pos),
-              _buildModePill('Wholesale', 'wholesale', pos),
-            ],
-          ),
-        ),
-
-        // Online/Offline status dot
         Padding(
           padding: const EdgeInsets.only(right: 16.0),
           child: Row(
@@ -188,7 +174,11 @@ class _PosScreenState extends State<PosScreen> {
               const SizedBox(width: 6),
               Text(
                 sync.isOnline ? 'Online' : 'Offline',
-                style: const TextStyle(color: AppTheme.slateText, fontSize: 11),
+                style: TextStyle(
+                  color: sync.isOnline ? AppTheme.greenSuccess : AppTheme.redDanger,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -197,23 +187,27 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 
-  Widget _buildModePill(String label, String mode, PosProvider pos) {
+  Widget _buildSaleModePill(String label, String mode, PosProvider pos, Color activeColor) {
     final isSelected = pos.selectedSaleMode == mode;
     return InkWell(
       onTap: () => pos.setSaleMode(mode),
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.neonCyan : Colors.transparent,
+          color: isSelected ? activeColor.withOpacity(0.12) : AppTheme.cyberBgSecondary,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? activeColor : AppTheme.cardBorder,
+            width: isSelected ? 1.5 : 1,
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.black : AppTheme.slateText,
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? activeColor : AppTheme.slateText,
+            fontSize: 12.5,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
           ),
         ),
       ),
@@ -230,60 +224,135 @@ class _PosScreenState extends State<PosScreen> {
 
     return Column(
       children: [
-        // Search and Barcode Bar
+        // 1. Sale Mode Selection Row (4 Pills in a Row)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Row(
+            children: [
+              _buildSaleModePill('🏪 Retail', 'retail', pos, AppTheme.neonCyan),
+              const SizedBox(width: 8),
+              _buildSaleModePill('📦 W.Sale', 'wholesale', pos, const Color(0xFFA855F7)),
+              const SizedBox(width: 8),
+              _buildSaleModePill('💳 R.Loan', 'r_loan', pos, const Color(0xFFF59E0B)),
+              const SizedBox(width: 8),
+              _buildSaleModePill('💳 W.Loan', 'w_loan', pos, const Color(0xFFF59E0B)),
+            ],
+          ),
+        ),
+
+        // 2. Search Bar + QR Scan + Cart Button
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           child: Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _searchCtrl,
-                  style: const TextStyle(color: AppTheme.lightText, fontSize: 13),
-                  decoration: InputDecoration(
-                    hintText: 'Search product or scan barcode...',
-                    prefixIcon: const Icon(Icons.search, color: AppTheme.slateText, size: 18),
-                    isDense: true,
-                    suffixIcon: _searchCtrl.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, color: AppTheme.dimText, size: 16),
-                            onPressed: () {
-                              _searchCtrl.clear();
-                              productProv.setSearchQuery('');
-                            },
-                          )
-                        : null,
+                child: Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppTheme.cyberBgTertiary,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppTheme.cardBorder),
                   ),
-                  onChanged: (val) => productProv.setSearchQuery(val),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    style: const TextStyle(color: AppTheme.lightText, fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Search products...',
+                      hintStyle: const TextStyle(color: AppTheme.dimText, fontSize: 13),
+                      prefixIcon: const Icon(Icons.search, color: AppTheme.slateText, size: 20),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                      suffixIcon: _searchCtrl.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, color: AppTheme.dimText, size: 16),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                productProv.setSearchQuery('');
+                              },
+                            )
+                          : null,
+                    ),
+                    onChanged: (val) => productProv.setSearchQuery(val),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
-              IconButton(
-                style: IconButton.styleFrom(
-                  backgroundColor: AppTheme.cyberBgTertiary,
-                  side: const BorderSide(color: AppTheme.cardBorder),
+              InkWell(
+                onTap: () => _showManualBarcodeDialog(context),
+                borderRadius: BorderRadius.circular(22),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.cyberBgTertiary,
+                    border: Border.all(color: AppTheme.cardBorder),
+                  ),
+                  child: const Icon(Icons.qr_code_scanner, color: AppTheme.neonCyan, size: 22),
                 ),
-                icon: const Icon(Icons.qr_code_scanner, color: AppTheme.neonCyan),
-                onPressed: () {
-                  _showManualBarcodeDialog(context);
-                },
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () => _openMobileCartSheet(context, pos, settings),
+                borderRadius: BorderRadius.circular(22),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.cyberBgTertiary,
+                    border: Border.all(color: AppTheme.cardBorder),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      const Icon(Icons.shopping_cart_outlined, color: AppTheme.neonCyan, size: 22),
+                      if (pos.cartItemCount > 0)
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: AppTheme.redDanger,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '${pos.cartItemCount}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
         ),
 
-        // Category Filter Chips
+        // 3. Category Filter Chips + "+ add New"
         _buildCategoryChips(context, productProv),
 
-        // Products Grid
+        // 4. Products Grid
         Expanded(
           child: products.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
-                      Icon(Icons.inventory_2_outlined, color: AppTheme.dimText, size: 48),
+                      Icon(Icons.inventory_2_outlined, color: AppTheme.dimText, size: 52),
                       SizedBox(height: 12),
-                      Text('No products found', style: TextStyle(color: AppTheme.slateText)),
+                      Text('No products found', style: TextStyle(color: AppTheme.slateText, fontSize: 14)),
                     ],
                   ),
                 )
@@ -291,7 +360,7 @@ class _PosScreenState extends State<PosScreen> {
                   padding: const EdgeInsets.all(12),
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: 180,
-                    childAspectRatio: 0.76,
+                    childAspectRatio: 0.72,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
                   ),
@@ -311,23 +380,24 @@ class _PosScreenState extends State<PosScreen> {
     final selectedId = productProv.selectedCategoryId;
 
     return SizedBox(
-      height: 40,
+      height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         children: [
           _categoryChip(
-            label: 'All Items',
+            label: 'All',
             isSelected: selectedId == null,
             onTap: () => productProv.setSelectedCategory(null),
           ),
           ...categories.map((c) {
             return _categoryChip(
-              label: '${c.icon ?? "📱"} ${c.name}',
+              label: '${c.icon ?? "📦"} ${c.name}',
               isSelected: selectedId == c.id,
               onTap: () => productProv.setSelectedCategory(c.id),
             );
           }),
+          _addCategoryChip(context),
         ],
       ),
     );
@@ -342,7 +412,7 @@ class _PosScreenState extends State<PosScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: isSelected ? AppTheme.neonCyan : AppTheme.cyberBgTertiary,
+            color: isSelected ? AppTheme.neonCyan.withOpacity(0.12) : AppTheme.cyberBgTertiary,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: isSelected ? AppTheme.neonCyan : AppTheme.cardBorder),
           ),
@@ -350,10 +420,40 @@ class _PosScreenState extends State<PosScreen> {
           child: Text(
             label,
             style: TextStyle(
-              color: isSelected ? Colors.black : AppTheme.slateText,
+              color: isSelected ? AppTheme.neonCyan : AppTheme.slateText,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               fontSize: 12,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _addCategoryChip(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: InkWell(
+        onTap: () => _showQuickAddCategoryDialog(context),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppTheme.cyberBgTertiary,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppTheme.cardBorder),
+          ),
+          alignment: Alignment.center,
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.add, color: AppTheme.slateText, size: 14),
+              SizedBox(width: 4),
+              Text(
+                'add New',
+                style: TextStyle(color: AppTheme.slateText, fontSize: 12),
+              ),
+            ],
           ),
         ),
       ),
@@ -366,130 +466,184 @@ class _PosScreenState extends State<PosScreen> {
     PosProvider pos,
     dynamic settings,
   ) {
-    final isWholesale = pos.selectedSaleMode == 'wholesale';
+    final mode = pos.selectedSaleMode;
+    final isWholesale = mode == 'wholesale' || mode == 'w_loan';
+    final isLoan = mode == 'r_loan' || mode == 'w_loan';
     final price = isWholesale ? (p.wsalePrice ?? p.retailPrice) : p.retailPrice;
-    final imageBytes = ImageCompressionService.decodeBase64(p.imageBase64);
-    final hasOldPrice = p.oldStockPrice != null && p.oldStockPrice! > 0;
-    final hasNewPrice = p.newStockPrice != null && p.newStockPrice! > 0;
+    final profit = (price - p.costPrice).clamp(0.0, double.infinity);
+    final currency = settings.currency ?? 'Rs';
 
-    return Card(
-      color: AppTheme.cyberBgSecondary,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: AppTheme.cardBorder),
+    Color priceColor = AppTheme.neonCyan;
+    if (isLoan) {
+      priceColor = const Color(0xFFF59E0B);
+    } else if (isWholesale) {
+      priceColor = const Color(0xFFA855F7);
+    }
+
+    final imageBytes = ImageCompressionService.decodeBase64(p.imageBase64);
+    final effectiveLimit = p.getEffectiveLowStockLimit(settings.lowStockAlert);
+    final isLowStock = p.stock <= effectiveLimit;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cyberBgSecondary,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isLowStock ? AppTheme.redDanger.withOpacity(0.6) : AppTheme.cardBorder,
+        ),
       ),
       child: InkWell(
+        borderRadius: BorderRadius.circular(12),
         onTap: () => _handleProductTap(p, pos),
-        borderRadius: BorderRadius.circular(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            // Image / Icon
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: AppTheme.cyberBgTertiary,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image
+                Expanded(
+                  flex: 5,
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.cyberBgTertiary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: imageBytes != null
+                        ? Image.memory(imageBytes, fit: BoxFit.cover)
+                        : const Center(
+                            child: Icon(Icons.devices, color: AppTheme.slateText, size: 32),
+                          ),
+                  ),
                 ),
-                child: imageBytes != null
-                    ? ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                        child: Image.memory(imageBytes, fit: BoxFit.cover),
-                      )
-                    : const Center(
-                        child: Icon(Icons.devices, color: AppTheme.slateText, size: 36),
-                      ),
-              ),
-            ),
 
-            // Product Details
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    p.name,
-                    style: const TextStyle(
-                      color: AppTheme.lightText,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12.5,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${settings.currency} ${price.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      color: AppTheme.neonCyan,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-
-                  // Old / New Stock badges if configured
-                  if (hasOldPrice || hasNewPrice) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        if (hasOldPrice)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: AppTheme.orangeWarning.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: AppTheme.orangeWarning.withOpacity(0.4)),
-                            ),
-                            child: Text(
-                              'Old:${p.oldStockPrice!.toStringAsFixed(0)}',
-                              style: const TextStyle(color: AppTheme.orangeWarning, fontSize: 9, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        if (hasOldPrice && hasNewPrice) const SizedBox(width: 4),
-                        if (hasNewPrice)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: AppTheme.greenSuccess.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: AppTheme.greenSuccess.withOpacity(0.4)),
-                            ),
-                            child: Text(
-                              'New:${p.newStockPrice!.toStringAsFixed(0)}',
-                              style: const TextStyle(color: AppTheme.greenSuccess, fontSize: 9, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // Product Details
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 2, 10, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Stock: ${p.stock}',
+                        p.name,
+                        style: const TextStyle(
+                          color: AppTheme.lightText,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+
+                      // Category indicator
+                      Row(
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: AppTheme.neonCyan,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              p.categoryName ?? 'General',
+                              style: const TextStyle(color: AppTheme.slateText, fontSize: 10.5),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+
+                      // Price
+                      Text(
+                        '$currency ${price.toStringAsFixed(2)}',
                         style: TextStyle(
-                          color: p.stock <= 5 ? AppTheme.redDanger : AppTheme.slateText,
-                          fontSize: 10.5,
+                          color: priceColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13.5,
+                        ),
+                      ),
+
+                      // Profit
+                      Text(
+                        'Profit: $currency ${profit.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          color: AppTheme.greenSuccess,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+                      const SizedBox(height: 6),
+
+                      // Stock box with low stock alert
                       Container(
-                        padding: const EdgeInsets.all(2),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppTheme.neonCyan.withOpacity(0.2),
-                          shape: BoxShape.circle,
+                          color: isLowStock ? AppTheme.redDanger.withOpacity(0.15) : AppTheme.cyberBgTertiary,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: isLowStock ? AppTheme.redDanger : AppTheme.cardBorder,
+                          ),
                         ),
-                        child: const Icon(Icons.add, color: AppTheme.neonCyan, size: 14),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isLowStock) ...[
+                              const Icon(Icons.warning_amber_rounded, color: AppTheme.redDanger, size: 11),
+                              const SizedBox(width: 3),
+                            ],
+                            Text(
+                              'Stock: ${p.stock}',
+                              style: TextStyle(
+                                color: isLowStock ? AppTheme.redDanger : AppTheme.slateText,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+
+            // Dual Price Badge
+            if (p.hasDualPricing)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B),
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    'Dual Price',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 9,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

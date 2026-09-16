@@ -374,7 +374,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             border: Border.all(color: AppTheme.orangeWarning.withOpacity(0.4)),
                           ),
                           child: Text(
-                            'පරණ ස්ටොක්: $currency ${p.oldStockPrice!.toStringAsFixed(2)}',
+                            'Old Stock: $currency ${p.oldStockPrice!.toStringAsFixed(2)}',
                             style: const TextStyle(color: AppTheme.orangeWarning, fontSize: 11, fontWeight: FontWeight.w600),
                           ),
                         ),
@@ -389,35 +389,88 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             border: Border.all(color: AppTheme.greenSuccess.withOpacity(0.4)),
                           ),
                           child: Text(
-                            'අලුත් ස්ටොක්: $currency ${p.newStockPrice!.toStringAsFixed(2)}',
+                            'New Stock: $currency ${p.newStockPrice!.toStringAsFixed(2)}',
                             style: const TextStyle(color: AppTheme.greenSuccess, fontSize: 11, fontWeight: FontWeight.w600),
                           ),
                         ),
                     ],
                   ),
                 ],
+
+                const SizedBox(height: 6),
+                // Retail & Wholesale Profits
+                Row(
+                  children: [
+                    Text(
+                      'Retail Profit: $currency ${(p.retailPrice - p.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
+                      style: const TextStyle(color: AppTheme.greenSuccess, fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'WS Profit: $currency ${((p.wsalePrice ?? p.retailPrice) - p.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
+                      style: const TextStyle(color: AppTheme.neonCyan, fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
 
-          // Action Buttons
+          // Action Buttons & Green + New Stock Button
           Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              IconButton(
-                tooltip: 'Add Stock Batch (අලුත් තොග එකතු කරන්න)',
-                icon: const Icon(Icons.add_business, color: AppTheme.neonCyan, size: 20),
-                onPressed: () => _showAddBatchDialog(context, p),
+              // Dual Price Badge
+              if (p.hasDualPricing) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    '🟡 Dual Price',
+                    style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 6),
+              ],
+
+              // Green [+ New Stock] Button
+              ElevatedButton.icon(
+                icon: const Icon(Icons.add_box, size: 14),
+                label: const Text('+ New Stock', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.greenSuccess,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () => _showRestockModal(context, p),
               ),
-              IconButton(
-                tooltip: 'Edit Product',
-                icon: const Icon(Icons.edit, color: AppTheme.slateText, size: 19),
-                onPressed: () => _showProductDialog(context, p),
-              ),
-              IconButton(
-                tooltip: 'Delete Product',
-                icon: const Icon(Icons.delete_outline, color: AppTheme.redDanger, size: 19),
-                onPressed: () => _confirmDelete(context, p),
+              const SizedBox(height: 6),
+
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Edit Product',
+                    icon: const Icon(Icons.edit, color: AppTheme.slateText, size: 18),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () => _showProductDialog(context, p),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: 'Delete Product',
+                    icon: const Icon(Icons.delete_outline, color: AppTheme.redDanger, size: 18),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () => _confirmDelete(context, p),
+                  ),
+                ],
               ),
             ],
           ),
@@ -438,6 +491,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final oldPriceCtrl = TextEditingController(text: product?.oldStockPrice != null ? product!.oldStockPrice!.toStringAsFixed(2) : '');
     final newPriceCtrl = TextEditingController(text: product?.newStockPrice != null ? product!.newStockPrice!.toStringAsFixed(2) : '');
     final stockCtrl = TextEditingController(text: product != null ? product.stock.toString() : '0');
+    final lowStockCtrl = TextEditingController(text: product?.lowStockLimit != null ? product!.lowStockLimit.toString() : '');
     final descCtrl = TextEditingController(text: product?.description ?? '');
 
     int? selectedCat = product?.categoryId;
@@ -627,7 +681,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
                     // Pricing Section Header
                     const Text(
-                      'Pricing & Cost (මිල ගණන්)',
+                      'Pricing & Cost',
                       style: TextStyle(color: AppTheme.neonCyan, fontSize: 13, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
@@ -640,7 +694,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             controller: costCtrl,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             style: const TextStyle(color: AppTheme.lightText),
-                            decoration: const InputDecoration(labelText: 'Cost Price (ගන්නා මිල)'),
+                            decoration: const InputDecoration(labelText: 'Cost Price'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -649,7 +703,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             controller: retailCtrl,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             style: const TextStyle(color: AppTheme.neonCyan, fontWeight: FontWeight.bold),
-                            decoration: const InputDecoration(labelText: 'Retail Price (විකුණුම් මිල) *'),
+                            decoration: const InputDecoration(labelText: 'Retail Price *'),
                           ),
                         ),
                       ],
@@ -665,7 +719,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             controller: wsaleCtrl,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             style: const TextStyle(color: AppTheme.lightText),
-                            decoration: const InputDecoration(labelText: 'Wholesale Price (තොග මිල)'),
+                            decoration: const InputDecoration(labelText: 'Wholesale Price'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -674,10 +728,24 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             controller: stockCtrl,
                             keyboardType: TextInputType.number,
                             style: const TextStyle(color: AppTheme.lightText),
-                            decoration: const InputDecoration(labelText: 'Stock Quantity (තොග ප්‍රමාණය)'),
+                            decoration: const InputDecoration(labelText: 'Stock Quantity'),
                           ),
                         ),
                       ],
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // Individual Low Stock Limit Field
+                    TextField(
+                      controller: lowStockCtrl,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: AppTheme.orangeWarning),
+                      decoration: const InputDecoration(
+                        labelText: 'Individual Low Stock Alert Limit',
+                        hintText: 'Leave blank to use global settings limit',
+                        prefixIcon: Icon(Icons.warning_amber_rounded, color: AppTheme.orangeWarning, size: 18),
+                      ),
                     ),
 
                     const SizedBox(height: 12),
@@ -698,7 +766,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               Icon(Icons.history_toggle_off, color: AppTheme.orangeWarning, size: 16),
                               SizedBox(width: 6),
                               Text(
-                                'Batch Pricing (පරණ ස්ටොක් සහ අලුත් ස්ටොක් මිල)',
+                                'Batch Pricing (Old & New Stock Prices)',
                                 style: TextStyle(color: AppTheme.orangeWarning, fontSize: 12, fontWeight: FontWeight.bold),
                               ),
                             ],
@@ -712,7 +780,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                   style: const TextStyle(color: AppTheme.orangeWarning),
                                   decoration: const InputDecoration(
-                                    labelText: 'Old Stock Price (පරණ මිල)',
+                                    labelText: 'Old Stock Price',
                                     isDense: true,
                                   ),
                                 ),
@@ -724,7 +792,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                   style: const TextStyle(color: AppTheme.greenSuccess),
                                   decoration: const InputDecoration(
-                                    labelText: 'New Stock Price (අලුත් මිල)',
+                                    labelText: 'New Stock Price',
                                     isDense: true,
                                   ),
                                 ),
@@ -768,6 +836,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   final oldPrice = double.tryParse(oldPriceCtrl.text);
                   final newPrice = double.tryParse(newPriceCtrl.text);
                   final stock = int.tryParse(stockCtrl.text) ?? 0;
+                  final lowLimit = int.tryParse(lowStockCtrl.text);
 
                   final p = Product(
                     id: product?.id,
@@ -780,6 +849,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     oldStockPrice: oldPrice,
                     newStockPrice: newPrice,
                     stock: stock,
+                    lowStockLimit: lowLimit,
                     unit: unitCtrl.text.trim().isEmpty ? 'pcs' : unitCtrl.text.trim(),
                     description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
                     imageBase64: currentImageBase64,
@@ -792,6 +862,344 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   if (mounted) Navigator.pop(ctx);
                 },
                 child: const Text('Save Product'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // Dedicated "+ Restock Product" Modal matching Screenshot 5.16.13 PM
+  void _showRestockModal(BuildContext context, Product product) {
+    final productProv = Provider.of<ProductProvider>(context, listen: false);
+    final qtyCtrl = TextEditingController(text: '10');
+    final costCtrl = TextEditingController(text: product.costPrice.toStringAsFixed(2));
+    final retailCtrl = TextEditingController(text: product.retailPrice.toStringAsFixed(2));
+    final wsaleCtrl = TextEditingController(text: (product.wsalePrice ?? product.retailPrice).toStringAsFixed(2));
+    final barcodeInputCtrl = TextEditingController();
+    final List<String> scannedBarcodes = [];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final addedQty = double.tryParse(qtyCtrl.text) ?? 0.0;
+          final newCost = double.tryParse(costCtrl.text) ?? product.costPrice;
+          final newRetail = double.tryParse(retailCtrl.text) ?? product.retailPrice;
+          final newWsale = double.tryParse(wsaleCtrl.text) ?? (product.wsalePrice ?? product.retailPrice);
+          final isPriceChanged = (newRetail != product.retailPrice);
+          final projectedStock = product.stock + addedQty.toInt();
+
+          return AlertDialog(
+            backgroundColor: AppTheme.cyberBgSecondary,
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.greenSuccess.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.add_box, color: AppTheme.greenSuccess, size: 22),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '+ Restock Product',
+                        style: TextStyle(color: AppTheme.lightText, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        product.name,
+                        style: const TextStyle(color: AppTheme.neonCyan, fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 460,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Auto Stock Preview Banner
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.cyberBgTertiary,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.cardBorder),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Column(
+                            children: [
+                              const Text('Current Stock', style: TextStyle(color: AppTheme.slateText, fontSize: 11)),
+                              const SizedBox(height: 2),
+                              Text('${product.stock} ${product.unit}', style: const TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 13)),
+                            ],
+                          ),
+                          const Icon(Icons.add, color: AppTheme.greenSuccess, size: 18),
+                          Column(
+                            children: [
+                              const Text('Adding Qty', style: TextStyle(color: AppTheme.slateText, fontSize: 11)),
+                              const SizedBox(height: 2),
+                              Text('${addedQty.toInt()} ${product.unit}', style: const TextStyle(color: AppTheme.greenSuccess, fontWeight: FontWeight.bold, fontSize: 13)),
+                            ],
+                          ),
+                          const Icon(Icons.arrow_forward, color: AppTheme.neonCyan, size: 18),
+                          Column(
+                            children: [
+                              const Text('New Stock', style: TextStyle(color: AppTheme.slateText, fontSize: 11)),
+                              const SizedBox(height: 2),
+                              Text('$projectedStock ${product.unit}', style: const TextStyle(color: AppTheme.neonCyan, fontWeight: FontWeight.bold, fontSize: 13)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Quantity & Purchase Price
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: qtyCtrl,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold),
+                            decoration: InputDecoration(
+                              labelText: 'Add Quantity (${product.unit}) *',
+                              prefixIcon: const Icon(Icons.inventory, color: AppTheme.greenSuccess, size: 18),
+                            ),
+                            onChanged: (_) => setModalState(() {}),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: costCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: const TextStyle(color: AppTheme.lightText),
+                            decoration: const InputDecoration(
+                              labelText: 'Purchase Price (Cost) *',
+                              prefixIcon: Icon(Icons.attach_money, color: AppTheme.slateText, size: 18),
+                            ),
+                            onChanged: (_) => setModalState(() {}),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Selling Prices (Retail & Wholesale)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: retailCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: const TextStyle(color: AppTheme.neonCyan, fontWeight: FontWeight.bold),
+                            decoration: const InputDecoration(
+                              labelText: 'Selling Retail Price *',
+                              prefixIcon: Icon(Icons.sell, color: AppTheme.neonCyan, size: 18),
+                            ),
+                            onChanged: (_) => setModalState(() {}),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: wsaleCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: const TextStyle(color: AppTheme.lightText),
+                            decoration: const InputDecoration(
+                              labelText: 'Selling WS Price',
+                              prefixIcon: Icon(Icons.store, color: AppTheme.slateText, size: 18),
+                            ),
+                            onChanged: (_) => setModalState(() {}),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Dual Pricing Alert Banner if price changed
+                    if (isPriceChanged) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFF59E0B)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber_rounded, color: Color(0xFFF59E0B), size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Dual Pricing Activated!',
+                                    style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Old Price: ${product.retailPrice.toStringAsFixed(2)}  ➔  New Price: ${newRetail.toStringAsFixed(2)}\nBoth prices will be selectable at POS checkout.',
+                                    style: const TextStyle(color: AppTheme.lightText, fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 14),
+
+                    // Scan Many Barcodes Section
+                    const Text('Scan Many Barcodes:', style: TextStyle(color: AppTheme.slateText, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: barcodeInputCtrl,
+                            style: const TextStyle(color: AppTheme.lightText),
+                            decoration: const InputDecoration(
+                              hintText: 'Enter / Scan Barcode...',
+                              prefixIcon: Icon(Icons.qr_code_scanner, color: AppTheme.neonCyan, size: 18),
+                              isDense: true,
+                            ),
+                            onSubmitted: (val) {
+                              if (val.trim().isNotEmpty && !scannedBarcodes.contains(val.trim())) {
+                                setModalState(() {
+                                  scannedBarcodes.add(val.trim());
+                                  barcodeInputCtrl.clear();
+                                  qtyCtrl.text = scannedBarcodes.length.toString();
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.neonCyan, foregroundColor: Colors.black),
+                          onPressed: () {
+                            final val = barcodeInputCtrl.text.trim();
+                            if (val.isNotEmpty && !scannedBarcodes.contains(val)) {
+                              setModalState(() {
+                                scannedBarcodes.add(val);
+                                barcodeInputCtrl.clear();
+                                qtyCtrl.text = scannedBarcodes.length.toString();
+                              });
+                            }
+                          },
+                          child: const Text('Add'),
+                        ),
+                      ],
+                    ),
+                    if (scannedBarcodes.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 80),
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.cyberBgTertiary,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: AppTheme.cardBorder),
+                        ),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: scannedBarcodes.length,
+                          itemBuilder: (c, idx) => Row(
+                            children: [
+                              const Icon(Icons.check_circle, color: AppTheme.greenSuccess, size: 14),
+                              const SizedBox(width: 6),
+                              Text(scannedBarcodes[idx], style: const TextStyle(color: AppTheme.lightText, fontSize: 12)),
+                              const Spacer(),
+                              GestureDetector(
+                                onTap: () => setModalState(() {
+                                  scannedBarcodes.removeAt(idx);
+                                  qtyCtrl.text = scannedBarcodes.isNotEmpty ? scannedBarcodes.length.toString() : qtyCtrl.text;
+                                }),
+                                child: const Icon(Icons.close, color: AppTheme.redDanger, size: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel', style: TextStyle(color: AppTheme.slateText)),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.check, size: 16),
+                label: const Text('+ Confirm Restock'),
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.greenSuccess, foregroundColor: Colors.black),
+                onPressed: () async {
+                  if (addedQty <= 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a valid restock quantity.')),
+                    );
+                    return;
+                  }
+
+                  double? oldPrice = product.oldStockPrice;
+                  double? newPrice = product.newStockPrice;
+                  if (isPriceChanged) {
+                    oldPrice = product.retailPrice;
+                    newPrice = newRetail;
+                  }
+
+                  final newBatch = StockBatch(
+                    batchId: const Uuid().v4(),
+                    quantity: addedQty,
+                    costPrice: newCost,
+                    sellingPrice: newRetail,
+                    barcodes: scannedBarcodes,
+                    dateAdded: DateTime.now().toIso8601String(),
+                  );
+
+                  final updatedBatches = List<StockBatch>.from(product.stockBatches)..add(newBatch);
+                  final updatedProduct = product.copyWith(
+                    stock: product.stock + addedQty.toInt(),
+                    costPrice: newCost,
+                    retailPrice: newRetail,
+                    wsalePrice: newWsale,
+                    oldStockPrice: oldPrice,
+                    newStockPrice: newPrice,
+                    stockBatches: updatedBatches,
+                  );
+
+                  await productProv.saveProduct(updatedProduct);
+                  if (mounted) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('✅ Restocked "${product.name}": +${addedQty.toInt()} ${product.unit} (New Stock: ${updatedProduct.stock})'),
+                        backgroundColor: AppTheme.greenSuccess,
+                      ),
+                    );
+                  }
+                },
               ),
             ],
           );
@@ -868,7 +1276,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 const SizedBox(height: 12),
                 CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Set as New Stock Price (අලුත් ස්ටොක් මිල ලෙස යොදන්න)', style: TextStyle(color: AppTheme.lightText, fontSize: 12)),
+                  title: const Text('Set as New Stock Price', style: TextStyle(color: AppTheme.lightText, fontSize: 12)),
                   value: updateNewStockPrice,
                   activeColor: AppTheme.neonCyan,
                   onChanged: (v) {
@@ -880,7 +1288,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
                 CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Set as Old Stock Price (පරණ ස්ටොක් මිල ලෙස යොදන්න)', style: TextStyle(color: AppTheme.lightText, fontSize: 12)),
+                  title: const Text('Set as Old Stock Price', style: TextStyle(color: AppTheme.lightText, fontSize: 12)),
                   value: updateOldStockPrice,
                   activeColor: AppTheme.orangeWarning,
                   onChanged: (v) {

@@ -155,7 +155,7 @@ class CategoriesScreen extends StatelessWidget {
                 TextField(
                   controller: nameCtrl,
                   style: const TextStyle(color: AppTheme.lightText),
-                  decoration: const InputDecoration(labelText: 'Category Name (වර්ගයේ නම) *'),
+                  decoration: const InputDecoration(labelText: 'Category Name *'),
                 ),
                 const SizedBox(height: 14),
                 const Text('Choose Icon / Emoji:', style: TextStyle(color: AppTheme.slateText, fontSize: 12, fontWeight: FontWeight.bold)),

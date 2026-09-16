@@ -84,8 +84,9 @@ class PosProvider extends ChangeNotifier {
     String? batchId,
     String? batchLabel,
   }) {
+    final isWholesale = selectedSaleMode == 'wholesale' || selectedSaleMode == 'w_loan';
     final price = customPrice ??
-        (selectedSaleMode == 'wholesale'
+        (isWholesale
             ? (product.wsalePrice ?? product.retailPrice)
             : product.retailPrice);
 

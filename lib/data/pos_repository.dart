@@ -51,6 +51,11 @@ class PosRepository {
         if (bIndex != -1) {
           batches[bIndex].quantity = (batches[bIndex].quantity + qtyChange).clamp(0.0, 999999.0);
         }
+      } else if (qtyChange > 0) {
+        // Replenish stock batch on return
+        if (batches.isNotEmpty) {
+          batches[0].quantity += qtyChange;
+        }
       } else {
         // Deduct FIFO
         double remainingToDeduct = -qtyChange;

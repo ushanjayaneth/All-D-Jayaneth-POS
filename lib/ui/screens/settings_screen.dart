@@ -14,6 +14,7 @@ import '../../services/printer_service.dart';
 import '../../theme/app_theme.dart';
 import '../../models/sale.dart';
 import '../../models/cart_item.dart';
+import '../main_navigation_layout.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -37,6 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _autoPrint = true;
   bool _isSaving = false;
   bool _isSyncingCloud = false;
+  bool _isFirebaseUnlocked = false;
 
   @override
   void initState() {
@@ -107,8 +109,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
         children: [
-          // 1. Business & Store Profile
-          _buildSectionHeader(Icons.storefront, 'Store & Business Profile (ව්‍යාපාරික විස්තර)'),
+          // 1. QUICK NAVIGATE
+          _buildSectionHeader(Icons.explore, 'QUICK NAVIGATE'),
+          _buildCard([
+            _buildQuickNavItem(
+              icon: '🏷️',
+              title: 'Categories',
+              subtitle: 'Configure product category tags & groupings',
+              onTap: () => MainNavigationLayout.of(context)?.navigateTo(2),
+            ),
+            const Divider(color: AppTheme.cardBorder, height: 16),
+            _buildQuickNavItem(
+              icon: '👥',
+              title: 'Customers & Dues',
+              subtitle: 'Manage customer accounts, credits & loan debts',
+              onTap: () => MainNavigationLayout.of(context)?.navigateTo(3),
+            ),
+            const Divider(color: AppTheme.cardBorder, height: 16),
+            _buildQuickNavItem(
+              icon: '📈',
+              title: 'Reports & Analytics',
+              subtitle: 'View revenues, profits & analytics statements',
+              onTap: () => MainNavigationLayout.of(context)?.navigateTo(6),
+            ),
+          ]),
+
+          const SizedBox(height: 20),
+
+          // 2. SYSTEM PREFERENCES (Store & Business Profile)
+          _buildSectionHeader(Icons.tune, 'SYSTEM PREFERENCES'),
           _buildCard([
             TextField(
               controller: _storeNameCtrl,
@@ -119,7 +148,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextField(
               controller: _addressCtrl,
               style: const TextStyle(color: AppTheme.lightText),
-              decoration: const InputDecoration(labelText: 'Store Address (ලිපිනය)'),
+              decoration: const InputDecoration(labelText: 'Store Address'),
             ),
             const SizedBox(height: 12),
             Row(
@@ -128,7 +157,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: TextField(
                     controller: _phoneCtrl,
                     style: const TextStyle(color: AppTheme.lightText),
-                    decoration: const InputDecoration(labelText: 'Contact Phone Number (දුරකථන අංකය)'),
+                    decoration: const InputDecoration(labelText: 'Contact Phone Number'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -145,7 +174,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     controller: _lowStockCtrl,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(color: AppTheme.orangeWarning),
-                    decoration: const InputDecoration(labelText: 'Low Stock Alert Limit (අවම තොග සීමාව)'),
+                    decoration: const InputDecoration(labelText: 'Global Low Stock Alert Limit'),
                   ),
                 ),
               ],
@@ -154,8 +183,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 20),
 
-          // 2. Firebase Cloud Auto-Sync
-          _buildSectionHeader(Icons.cloud_sync, 'Firebase Cloud Realtime Sync (ඔන්ලයින් ඩේටා සම්බන්දතාවය)'),
+          // 3. DEVICE PROFILE
+          _buildSectionHeader(Icons.devices, 'DEVICE PROFILE'),
+          _buildCard([
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppTheme.neonCyan.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.neonCyan.withOpacity(0.3)),
+                  ),
+                  child: const Icon(Icons.point_of_sale, color: AppTheme.neonCyan, size: 24),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Terminal POS · Counter A', style: TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 14)),
+                      SizedBox(height: 2),
+                      Text('App: Jayaneth Demo • Build v1.0.0 • Role: Cashier 1', style: TextStyle(color: AppTheme.slateText, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.greenSuccess.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppTheme.greenSuccess.withOpacity(0.4)),
+                  ),
+                  child: const Text('ACTIVE', style: TextStyle(color: AppTheme.greenSuccess, fontWeight: FontWeight.bold, fontSize: 11)),
+                ),
+              ],
+            ),
+          ]),
+
+          const SizedBox(height: 20),
+
+          // 4. CLOUD DATABASE SYNC (Firebase RTDB with Masking & PIN Protection)
+          _buildSectionHeader(Icons.cloud_sync, 'CLOUD DATABASE SYNC'),
           _buildCard([
             Row(
               children: [
@@ -192,10 +262,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(width: 6),
                       Text(
                         syncProv.status == SyncStatus.ok
-                            ? 'Cloud Synced (ඔන්ලයින්)'
+                            ? 'Cloud Synced'
                             : syncProv.status == SyncStatus.syncing
-                                ? 'Syncing... (සම්බන්ද වෙමින්)'
-                                : 'Offline / Not Connected (ඕෆ්ලයින්)',
+                                ? 'Syncing...'
+                                : 'Offline / Not Connected',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -217,18 +287,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 12),
+
+            // Masked & PIN-Protected Firebase Database URL
             TextField(
               controller: _firebaseUrlCtrl,
-              style: const TextStyle(color: AppTheme.neonCyan),
+              obscureText: !_isFirebaseUnlocked,
+              readOnly: !_isFirebaseUnlocked,
+              style: TextStyle(
+                color: _isFirebaseUnlocked ? AppTheme.neonCyan : AppTheme.slateText,
+                letterSpacing: _isFirebaseUnlocked ? 0 : 4,
+              ),
               decoration: InputDecoration(
-                labelText: 'Firebase Database URL (e.g. https://your-pos-rtdb.firebaseio.com)',
+                labelText: 'Firebase Realtime Database URL (Cloud Sync)',
                 hintText: 'https://project-id-default-rtdb.firebaseio.com',
                 prefixIcon: const Icon(Icons.link, color: AppTheme.neonCyan),
                 suffixIcon: IconButton(
-                  tooltip: 'Paste URL',
-                  icon: const Icon(Icons.paste, color: AppTheme.slateText),
-                  onPressed: () async {
-                    // Paste trigger handled via standard OS clipboard
+                  tooltip: _isFirebaseUnlocked ? '🔒 Lock URL' : '🔓 Unlock with Admin PIN (8514)',
+                  icon: Icon(
+                    _isFirebaseUnlocked ? Icons.lock_open : Icons.lock,
+                    color: _isFirebaseUnlocked ? AppTheme.greenSuccess : AppTheme.orangeWarning,
+                  ),
+                  onPressed: () {
+                    if (_isFirebaseUnlocked) {
+                      setState(() => _isFirebaseUnlocked = false);
+                    } else {
+                      _promptAdminPin(context, () {
+                        setState(() => _isFirebaseUnlocked = true);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Admin Access Granted ✅'), backgroundColor: AppTheme.greenSuccess),
+                        );
+                      });
+                    }
                   },
                 ),
               ),
@@ -240,7 +329,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: _isSyncingCloud
                       ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
                       : const Icon(Icons.cloud_download, size: 16),
-                  label: const Text('Connect & Pull Cloud Data (ඩේටා ලබාගන්න)'),
+                  label: const Text('Connect & Pull Cloud Data'),
                   style: ElevatedButton.styleFrom(backgroundColor: AppTheme.neonCyan, foregroundColor: Colors.black),
                   onPressed: _isSyncingCloud ? null : () => _connectAndPullCloudData(context),
                 ),
@@ -269,7 +358,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
 
           // 3. Security & Admin PIN
-          _buildSectionHeader(Icons.security, 'Security & Admin PIN Protection (ආරක්ෂක කේතය)'),
+          _buildSectionHeader(Icons.security, 'Security & Admin PIN Protection'),
           _buildCard([
             Row(
               children: [
@@ -303,7 +392,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
 
           // 4. Receipt & Thermal Printer Setup
-          _buildSectionHeader(Icons.print, 'Receipt & Thermal Printer Setup (ප්‍රින්ටර් සැකසුම්)'),
+          _buildSectionHeader(Icons.print, 'Receipt & Thermal Printer Setup'),
           _buildCard([
             Row(
               children: [
@@ -361,7 +450,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               icon: const Icon(Icons.receipt_long, size: 16, color: AppTheme.neonCyan),
-              label: const Text('Print Test Receipt (ප්‍රින්ටර් එක ටෙස්ට් කරන්න)', style: TextStyle(color: AppTheme.lightText)),
+              label: const Text('Print Test Receipt', style: TextStyle(color: AppTheme.lightText)),
               onPressed: () => _printTestReceipt(context),
             ),
           ]),
@@ -369,7 +458,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
 
           // 5. Data Management (JSON Backup, Restore, Factory Reset)
-          _buildSectionHeader(Icons.storage, 'Data Management & Backup (දත්ත සුරැකීම සහ ප්‍රතිස්ථාපනය)'),
+          _buildSectionHeader(Icons.storage, 'Data Management & Backup'),
           _buildCard([
             const Text(
               'Safely backup your local database to a standalone JSON file, or restore existing data.',
@@ -393,13 +482,113 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.delete_forever, size: 16, color: AppTheme.redDanger),
-                  label: const Text('System Factory Reset (සියලු දත්ත මකන්න)', style: TextStyle(color: AppTheme.redDanger)),
+                  label: const Text('System Factory Reset', style: TextStyle(color: AppTheme.redDanger)),
                   style: OutlinedButton.styleFrom(side: const BorderSide(color: AppTheme.redDanger)),
                   onPressed: () => _showFactoryResetDialog(context),
                 ),
               ],
             ),
           ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickNavItem({
+    required String icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Row(
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 22)),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: AppTheme.slateText, fontSize: 11.5),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppTheme.neonCyan, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _promptAdminPin(BuildContext context, VoidCallback onSuccess) {
+    final pinCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.cyberBgSecondary,
+        title: const Row(
+          children: [
+            Icon(Icons.lock, color: AppTheme.neonCyan, size: 22),
+            SizedBox(width: 8),
+            Text('Admin PIN Verification', style: TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter 4-digit Master Admin PIN to unlock protected settings:',
+              style: TextStyle(color: AppTheme.slateText, fontSize: 13),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: pinCtrl,
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              autofocus: true,
+              maxLength: 4,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppTheme.neonCyan, fontSize: 24, letterSpacing: 10, fontWeight: FontWeight.bold),
+              decoration: const InputDecoration(
+                hintText: '••••',
+                counterText: '',
+                prefixIcon: Icon(Icons.password, color: AppTheme.neonCyan),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.slateText)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.neonCyan, foregroundColor: Colors.black),
+            onPressed: () {
+              if (pinCtrl.text.trim() == '8514') {
+                Navigator.pop(ctx);
+                onSuccess();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('❌ Invalid Admin PIN. Access Denied.'), backgroundColor: AppTheme.redDanger),
+                );
+              }
+            },
+            child: const Text('Verify PIN'),
+          ),
         ],
       ),
     );

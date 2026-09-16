@@ -88,16 +88,16 @@ class DayEndScreen extends StatelessWidget {
                   const Divider(color: AppTheme.cardBorder, height: 16),
                   _summaryRow('TOTAL REVENUE:', '${settings.currency} ${summary.totalSales.toStringAsFixed(2)}', isBold: true, color: AppTheme.neonCyan),
                   const Divider(color: AppTheme.cardBorder, height: 16),
-                  _summaryRow('Cash in Drawer (මුදල්):', '${settings.currency} ${summary.cashSales.toStringAsFixed(2)}', color: AppTheme.greenSuccess),
-                  _summaryRow('Card Payments (කාඩ්පත්):', '${settings.currency} ${summary.cardSales.toStringAsFixed(2)}', color: AppTheme.neonCyan),
-                  _summaryRow('Credit / Loans (ණය):', '${settings.currency} ${summary.creditSales.toStringAsFixed(2)}', color: AppTheme.orangeWarning),
+                  _summaryRow('Cash in Drawer:', '${settings.currency} ${summary.cashSales.toStringAsFixed(2)}', color: AppTheme.greenSuccess),
+                  _summaryRow('Card Payments:', '${settings.currency} ${summary.cardSales.toStringAsFixed(2)}', color: AppTheme.neonCyan),
+                  _summaryRow('Credit / Loans:', '${settings.currency} ${summary.creditSales.toStringAsFixed(2)}', color: AppTheme.orangeWarning),
                   const Divider(color: AppTheme.cardBorder, height: 16),
                   _summaryRow('Cost of Goods Sold (COGS):', '${settings.currency} ${summary.totalCost.toStringAsFixed(2)}'),
                   _summaryRow('Gross Profit:', '${settings.currency} ${summary.grossProfit.toStringAsFixed(2)}'),
                   _summaryRow('Daily Business Expenses:', '- ${settings.currency} ${summary.totalExpenses.toStringAsFixed(2)}', color: AppTheme.redDanger),
                   const Divider(color: AppTheme.cardBorder, height: 20, thickness: 1.5),
                   _summaryRow(
-                    'NET PROFIT (සැබෑ ශුද්ධ ලාභය):',
+                    'NET PROFIT:',
                     '${settings.currency} ${summary.netProfit.toStringAsFixed(2)}',
                     isBold: true,
                     color: summary.netProfit >= 0 ? AppTheme.greenSuccess : AppTheme.redDanger,
@@ -112,7 +112,7 @@ class DayEndScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Daily Business Expenses (එදිනෙදා වියදම්)',
+                  'Daily Business Expenses',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.lightText),
                 ),
                 ElevatedButton.icon(
@@ -249,7 +249,7 @@ class DayEndScreen extends StatelessWidget {
                 controller: amountCtrl,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 style: const TextStyle(color: AppTheme.lightText),
-                decoration: const InputDecoration(labelText: 'Amount (මුදල) *'),
+                decoration: const InputDecoration(labelText: 'Amount *'),
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(

@@ -15,12 +15,21 @@ class ReportsScreen extends StatefulWidget {
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
+  bool _isUnlocked = false;
+  final TextEditingController _pinCtrl = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<ReportsProvider>(context, listen: false).loadReports();
     });
+  }
+
+  @override
+  void dispose() {
+    _pinCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -42,24 +51,99 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: 'Export Sales to CSV (Excel)',
-            icon: const Icon(Icons.file_download, color: AppTheme.slateText),
-            onPressed: () async {
-              await CsvExportService.exportSalesToCsv(reportProv.sales);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Sales report exported to CSV.'),
-                    backgroundColor: AppTheme.greenSuccess,
-                  ),
-                );
-              }
-            },
-          ),
+          if (_isUnlocked) ...[
+            IconButton(
+              tooltip: 'Lock Reports',
+              icon: const Icon(Icons.lock, color: AppTheme.orangeWarning),
+              onPressed: () => setState(() {
+                _isUnlocked = false;
+                _pinCtrl.clear();
+              }),
+            ),
+            IconButton(
+              tooltip: 'Export Sales to CSV (Excel)',
+              icon: const Icon(Icons.file_download, color: AppTheme.slateText),
+              onPressed: () async {
+                await CsvExportService.exportSalesToCsv(reportProv.sales);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Sales report exported to CSV.'),
+                      backgroundColor: AppTheme.greenSuccess,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
         ],
       ),
-      body: reportProv.isLoading
+      body: !_isUnlocked
+          ? Center(
+              child: Container(
+                width: 380,
+                padding: const EdgeInsets.all(24),
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.cyberBgSecondary,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.cardBorder),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: AppTheme.orangeWarning.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppTheme.orangeWarning),
+                      ),
+                      child: const Icon(Icons.lock, color: AppTheme.orangeWarning, size: 28),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Admin PIN Required',
+                      style: TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Enter Master Admin PIN to view sensitive revenues and profit analytics:',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppTheme.slateText, fontSize: 12.5),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: _pinCtrl,
+                      obscureText: true,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      maxLength: 4,
+                      style: const TextStyle(color: AppTheme.neonCyan, fontSize: 24, letterSpacing: 10, fontWeight: FontWeight.bold),
+                      decoration: const InputDecoration(
+                        hintText: '••••',
+                        counterText: '',
+                        prefixIcon: Icon(Icons.password, color: AppTheme.neonCyan),
+                      ),
+                      onSubmitted: (_) => _verifyAdminPin(),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.lock_open, size: 18),
+                        label: const Text('Unlock Reports', style: TextStyle(fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.neonCyan, foregroundColor: Colors.black),
+                        onPressed: _verifyAdminPin,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : reportProv.isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.neonCyan))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
@@ -112,7 +196,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 Icon(Icons.monetization_on, color: AppTheme.neonCyan, size: 18),
                                 SizedBox(width: 6),
                                 Text(
-                                  'NET PROFIT ANALYSIS (සැබෑ ශුද්ධ ලාභය)',
+                                  'NET PROFIT ANALYSIS',
                                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.neonCyan),
                                 ),
                               ],
@@ -163,25 +247,25 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         physics: const NeverScrollableScrollPhysics(),
                         children: [
                           StatCard(
-                            title: 'Total Revenue (ආදායම)',
+                            title: 'Total Revenue',
                             value: '${settings.currency} ${reportProv.totalRevenue.toStringAsFixed(2)}',
                             icon: Icons.payments,
                             color: AppTheme.neonCyan,
                           ),
                           StatCard(
-                            title: 'Total Cost (ගන්නා මිල)',
+                            title: 'Total Cost',
                             value: '${settings.currency} ${reportProv.totalCost.toStringAsFixed(2)}',
                             icon: Icons.shopping_basket,
                             color: AppTheme.orangeWarning,
                           ),
                           StatCard(
-                            title: 'Gross Profit (දළ ලාභය)',
+                            title: 'Gross Profit',
                             value: '${settings.currency} ${reportProv.grossProfit.toStringAsFixed(2)}',
                             icon: Icons.trending_up,
                             color: AppTheme.greenSuccess,
                           ),
                           StatCard(
-                            title: 'Total Expenses (වියදම්)',
+                            title: 'Total Expenses',
                             value: '${settings.currency} ${reportProv.totalExpenses.toStringAsFixed(2)}',
                             icon: Icons.receipt_long,
                             color: AppTheme.redDanger,
@@ -257,5 +341,29 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ),
       ],
     );
+  }
+
+  void _verifyAdminPin() {
+    final entered = _pinCtrl.text.trim();
+    if (entered == '8514') {
+      setState(() {
+        _isUnlocked = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Admin Access Granted ✅'),
+          backgroundColor: AppTheme.greenSuccess,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      _pinCtrl.clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Invalid Admin PIN. Access Denied.'),
+          backgroundColor: AppTheme.redDanger,
+        ),
+      );
+    }
   }
 }
