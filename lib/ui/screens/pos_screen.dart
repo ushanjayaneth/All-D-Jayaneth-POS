@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/product.dart';
+import '../../models/category.dart';
 import '../../models/customer.dart';
 import '../../providers/pos_provider.dart';
 import '../../providers/product_provider.dart';
@@ -456,6 +457,52 @@ class _PosScreenState extends State<PosScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showQuickAddCategoryDialog(BuildContext context) {
+    final nameCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.cyberBgSecondary,
+        title: const Row(
+          children: [
+            Icon(Icons.add_circle, color: AppTheme.neonCyan, size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Add Category',
+              style: TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ],
+        ),
+        content: TextField(
+          controller: nameCtrl,
+          autofocus: true,
+          style: const TextStyle(color: AppTheme.lightText),
+          decoration: const InputDecoration(labelText: 'Category Name *', hintText: 'e.g. Beverages'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.slateText)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.neonCyan, foregroundColor: Colors.black),
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty) return;
+              final prov = Provider.of<ProductProvider>(context, listen: false);
+              final newCat = Category(
+                name: nameCtrl.text.trim(),
+                icon: '📦',
+              );
+              await prov.saveCategory(newCat);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }
@@ -919,6 +966,19 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 
+  void _openMobileCartSheet(BuildContext context, PosProvider pos, dynamic settings) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.cyberBgSecondary,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => SizedBox(
+        height: MediaQuery.of(context).size.height * 0.75,
+        child: _buildCartPanel(context, pos, settings),
+      ),
+    );
+  }
+
   // Mobile Bottom Floating Cart Summary
   Widget _buildMobileCartBar(BuildContext context, PosProvider pos, dynamic settings) {
     return Container(
@@ -948,18 +1008,7 @@ class _PosScreenState extends State<PosScreen> {
             ElevatedButton.icon(
               icon: const Icon(Icons.shopping_bag_outlined, size: 18),
               label: const Text('View Cart / Pay'),
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: AppTheme.cyberBgSecondary,
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-                  builder: (ctx) => SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.75,
-                    child: _buildCartPanel(context, pos, settings),
-                  ),
-                );
-              },
+              onPressed: () => _openMobileCartSheet(context, pos, settings),
             ),
           ],
         ),

@@ -54,4 +54,30 @@ class CartItem {
       imageBase64: map['imageBase64']?.toString(),
     );
   }
+
+  CartItem copyWith({
+    int? productId,
+    String? name,
+    double? price,
+    double? costPrice,
+    double? qty,
+    double? subtotal,
+    String? mode,
+    String? batchId,
+    String? batchLabel,
+    String? imageBase64,
+  }) {
+    return CartItem(
+      productId: productId ?? this.productId,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      costPrice: costPrice ?? this.costPrice,
+      qty: qty ?? this.qty,
+      subtotal: subtotal ?? this.subtotal,
+      mode: mode ?? this.mode,
+      batchId: batchId ?? this.batchId,
+      batchLabel: batchLabel ?? this.batchLabel,
+      imageBase64: imageBase64 ?? this.imageBase64,
+    );
+  }
 }

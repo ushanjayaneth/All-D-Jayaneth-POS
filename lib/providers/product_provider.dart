@@ -62,6 +62,14 @@ class ProductProvider extends ChangeNotifier {
     }
   }
 
+  String getCategoryName(int? categoryId) {
+    if (categoryId == null) return 'General';
+    for (final c in _categories) {
+      if (c.id == categoryId) return c.name;
+    }
+    return 'General';
+  }
+
   Future<bool> saveProduct(Product product) async {
     if (product.id != null && product.id! > 0) {
       await _repo.updateProduct(product);

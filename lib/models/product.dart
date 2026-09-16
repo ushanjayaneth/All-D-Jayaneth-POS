@@ -7,6 +7,7 @@ class Product {
   final String? barcode;
   final String name;
   final int? categoryId;
+  final String? categoryName;
   final double retailPrice;
   final double? wsalePrice;
   final double costPrice;
@@ -26,6 +27,7 @@ class Product {
     this.barcode,
     required this.name,
     this.categoryId,
+    this.categoryName,
     required this.retailPrice,
     this.wsalePrice,
     this.costPrice = 0.0,
@@ -63,6 +65,7 @@ class Product {
       'barcode': barcode,
       'name': name,
       'category_id': categoryId,
+      'category_name': categoryName,
       'retail_price': retailPrice,
       'wsale_price': wsalePrice,
       'cost_price': costPrice,
@@ -104,6 +107,7 @@ class Product {
       barcode: map['barcode']?.toString(),
       name: map['name']?.toString() ?? '',
       categoryId: map['category_id'] as int? ?? map['categoryId'] as int?,
+      categoryName: map['category_name']?.toString() ?? map['categoryName']?.toString(),
       retailPrice: (map['retail_price'] as num?)?.toDouble() ?? (map['price'] as num?)?.toDouble() ?? (map['retailPrice'] as num?)?.toDouble() ?? 0.0,
       wsalePrice: (map['wsale_price'] as num?)?.toDouble() ?? (map['wholesalePrice'] as num?)?.toDouble() ?? (map['wsalePrice'] as num?)?.toDouble(),
       costPrice: (map['cost_price'] as num?)?.toDouble() ?? (map['costPrice'] as num?)?.toDouble() ?? 0.0,
@@ -125,6 +129,7 @@ class Product {
     String? barcode,
     String? name,
     int? categoryId,
+    String? categoryName,
     double? retailPrice,
     double? wsalePrice,
     double? costPrice,
@@ -144,6 +149,7 @@ class Product {
       barcode: barcode ?? this.barcode,
       name: name ?? this.name,
       categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
       retailPrice: retailPrice ?? this.retailPrice,
       wsalePrice: wsalePrice ?? this.wsalePrice,
       costPrice: costPrice ?? this.costPrice,

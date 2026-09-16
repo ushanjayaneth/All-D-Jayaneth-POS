@@ -15,6 +15,9 @@ class StockBatch {
     this.barcodes = const [],
   });
 
+  String get id => batchId;
+  String get batchName => 'Batch $dateAdded';
+
   Map<String, dynamic> toMap() {
     return {
       'batchId': batchId,

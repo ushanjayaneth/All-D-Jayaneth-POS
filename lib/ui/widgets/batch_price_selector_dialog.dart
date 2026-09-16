@@ -115,22 +115,25 @@ class BatchPriceSelectorDialog extends StatelessWidget {
 
             // Option 3: Additional Stock Batches if present
             ...product.stockBatches.map((batch) {
+              final bPrice = batch.sellingPrice ?? defaultPrice;
+              final bLabel = batch.batchName;
+              final bStock = batch.quantity.toInt();
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: _buildOptionCard(
                   context: context,
                   icon: Icons.inventory_2_outlined,
                   badgeColor: AppTheme.neonPurple,
-                  badgeText: '📦 ${batch.batchName} (Stock: ${batch.quantity})',
-                  priceText: '$currency ${batch.sellingPrice.toStringAsFixed(2)}',
-                  profitText: 'Profit: $currency ${(batch.sellingPrice - batch.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
+                  badgeText: '📦 $bLabel (Stock: $bStock)',
+                  priceText: '$currency ${bPrice.toStringAsFixed(2)}',
+                  profitText: 'Profit: $currency ${(bPrice - batch.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
                   onTap: () {
                     Navigator.pop(
                       context,
                       BatchPriceSelection(
-                        price: batch.sellingPrice,
-                        label: batch.batchName,
-                        batchId: batch.id,
+                        price: bPrice,
+                        label: bLabel,
+                        batchId: batch.batchId,
                         costPrice: batch.costPrice,
                       ),
                     );

@@ -559,7 +559,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 name: it.name,
                                 price: it.price,
                                 costPrice: it.costPrice,
-                                quantity: q,
+                                quantity: q.toDouble(),
                                 batchId: it.batchId,
                               ),
                             );
@@ -583,7 +583,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           subtotal: -totalRefund,
                           discount: 0,
                           total: -totalRefund,
-                          totalCost: -totalCostDeduction,
                           paymentMethod: sale.paymentMethod,
                           paidAmount: -totalRefund,
                           changeAmount: 0,
