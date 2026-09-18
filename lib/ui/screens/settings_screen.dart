@@ -32,6 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _headerCtrl = TextEditingController();
   final TextEditingController _footerCtrl = TextEditingController();
   final TextEditingController _firebaseUrlCtrl = TextEditingController();
+  final TextEditingController _counterCtrl = TextEditingController();
 
   String _paperSize = '80mm';
   String _printerType = 'system';
@@ -52,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _headerCtrl.text = settings.receiptHeader;
     _footerCtrl.text = settings.receiptFooter;
     _firebaseUrlCtrl.text = settings.firebaseRtdbUrl ?? '';
+    _counterCtrl.text = settings.counterName;
     _paperSize = settings.paperSize;
     _printerType = settings.printerType;
     _autoPrint = settings.autoPrint;
@@ -67,6 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _headerCtrl.dispose();
     _footerCtrl.dispose();
     _firebaseUrlCtrl.dispose();
+    _counterCtrl.dispose();
     super.dispose();
   }
 
@@ -183,8 +186,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 20),
 
-          // 3. DEVICE PROFILE
-          _buildSectionHeader(Icons.devices, 'DEVICE PROFILE'),
+          // 3. DEVICE PROFILE & TERMINAL COUNTER
+          _buildSectionHeader(Icons.devices, 'DEVICE PROFILE & TERMINAL COUNTER'),
           _buildCard([
             Row(
               children: [
@@ -199,13 +202,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: const Icon(Icons.point_of_sale, color: AppTheme.neonCyan, size: 24),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Terminal POS · Counter A', style: TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 14)),
-                      SizedBox(height: 2),
-                      Text('App: Jayaneth Demo • Build v1.0.0 • Role: Cashier 1', style: TextStyle(color: AppTheme.slateText, fontSize: 12)),
+                      Text('Terminal POS · ${_counterCtrl.text.isEmpty ? "Counter 1" : _counterCtrl.text}', style: const TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 14)),
+                      const SizedBox(height: 2),
+                      const Text('App: All-in-One POS • Role: Cashier / Admin', style: TextStyle(color: AppTheme.slateText, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -219,6 +222,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: const Text('ACTIVE', style: TextStyle(color: AppTheme.greenSuccess, fontWeight: FontWeight.bold, fontSize: 11)),
                 ),
               ],
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _counterCtrl,
+              style: const TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.w600),
+              decoration: const InputDecoration(
+                labelText: 'Terminal Counter Name (Appears on POS top bar & Printed receipts)',
+                hintText: 'e.g. Counter 1, Counter 2, Front Desk',
+                prefixIcon: Icon(Icons.computer, color: AppTheme.neonCyan),
+              ),
+              onChanged: (_) => setState(() {}),
             ),
           ]),
 
@@ -391,8 +405,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 20),
 
-          // 4. Receipt & Thermal Printer Setup
-          _buildSectionHeader(Icons.print, 'Receipt & Thermal Printer Setup'),
+          // 4. PRINTER & HARDWARE CONNECTIVITY
+          _buildSectionHeader(Icons.print, 'PRINTER & HARDWARE CONNECTIVITY'),
           _buildCard([
             Row(
               children: [
@@ -401,10 +415,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     value: _printerType,
                     dropdownColor: AppTheme.cyberBgSecondary,
                     style: const TextStyle(color: AppTheme.lightText),
-                    decoration: const InputDecoration(labelText: 'Printer Connection Mode'),
+                    decoration: const InputDecoration(labelText: 'Printer Connection Interface'),
                     items: const [
-                      DropdownMenuItem(value: 'system', child: Text('System Default / USB Printer')),
-                      DropdownMenuItem(value: 'bluetooth', child: Text('Bluetooth Thermal Printer')),
+                      DropdownMenuItem(value: 'system', child: Text('System Default / USB Thermal')),
+                      DropdownMenuItem(value: 'bluetooth', child: Text('Bluetooth ESC/POS Thermal')),
                       DropdownMenuItem(value: 'network', child: Text('Network / LAN POS Printer')),
                     ],
                     onChanged: (v) => setState(() => _printerType = v ?? 'system'),
@@ -418,8 +432,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: const TextStyle(color: AppTheme.lightText),
                     decoration: const InputDecoration(labelText: 'Thermal Paper Width'),
                     items: const [
-                      DropdownMenuItem(value: '58mm', child: Text('58mm (Small Thermal Printer)')),
-                      DropdownMenuItem(value: '80mm', child: Text('80mm (Standard POS Printer)')),
+                      DropdownMenuItem(value: '58mm', child: Text('58mm (Small Thermal Receipt)')),
+                      DropdownMenuItem(value: '80mm', child: Text('80mm (Standard POS Thermal)')),
                     ],
                     onChanged: (v) => setState(() => _paperSize = v ?? '80mm'),
                   ),
@@ -447,11 +461,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: const TextStyle(color: AppTheme.lightText),
               decoration: const InputDecoration(labelText: 'Receipt Footer / Policy Note'),
             ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.receipt_long, size: 16, color: AppTheme.neonCyan),
-              label: const Text('Print Test Receipt', style: TextStyle(color: AppTheme.lightText)),
+            const SizedBox(height: 14),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.print, size: 16),
+              label: const Text('Test Receipt Print'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.neonCyan,
+                foregroundColor: Colors.black,
+              ),
               onPressed: () => _printTestReceipt(context),
+            ),
+            const SizedBox(height: 16),
+            const Divider(color: AppTheme.cardBorder),
+            const SizedBox(height: 8),
+            const Row(
+              children: [
+                Icon(Icons.qr_code_scanner, color: AppTheme.neonCyan, size: 18),
+                SizedBox(width: 8),
+                Text(
+                  'Barcode & QR Scanner Hardware Support',
+                  style: TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              '• USB / Wireless 2.4GHz handheld scanners work out-of-the-box as HID Keyboard input without drivers.\n• Bluetooth barcode scanners pair directly via device Bluetooth settings.\n• Smartphone camera scanner is accessible anytime via the QR button in POS search bar.',
+              style: TextStyle(color: AppTheme.slateText, fontSize: 12, height: 1.4),
             ),
           ]),
 
@@ -647,6 +683,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       paperSize: _paperSize,
       printerType: _printerType,
       autoPrint: _autoPrint,
+      counterName: _counterCtrl.text.trim().isEmpty ? 'Counter 1' : _counterCtrl.text.trim(),
     );
 
     await prov.updateSettings(updated);
@@ -792,29 +829,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _printTestReceipt(BuildContext context) async {
     final settings = Provider.of<SettingsProvider>(context, listen: false).settings;
-    final testSale = Sale(
-      billNo: 'TEST-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
-      saleType: 'retail',
-      subtotal: 1500.0,
-      discount: 0.0,
-      total: 1500.0,
-      paymentMethod: 'Cash',
-      paidAmount: 2000.0,
-      changeAmount: 500.0,
-      items: [
-        CartItem(
-          productId: 1,
-          name: 'Demo Test Product',
-          price: 1500.0,
-          costPrice: 1200.0,
-          quantity: 1,
+    final success = await PrinterService.instance.printTestReceipt(settings: settings);
+    if (mounted && success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Test print sent to printer successfully!'),
+          backgroundColor: AppTheme.greenSuccess,
         ),
-      ],
-      cashierName: 'Admin',
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-    );
-
-    await PrinterService.instance.printReceipt(sale: testSale, settings: settings);
+      );
+    }
   }
 
   Future<void> _exportJsonBackup(BuildContext context) async {

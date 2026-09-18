@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../models/product.dart';
 import '../../models/category.dart';
 import '../../models/customer.dart';
@@ -152,10 +153,22 @@ class _PosScreenState extends State<PosScreen> {
           Text(
             storeName,
             style: const TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 17),
+            overflow: TextOverflow.ellipsis,
           ),
-          Text(
-            '$cashier · $counter',
-            style: const TextStyle(color: AppTheme.dimText, fontSize: 11.5),
+          InkWell(
+            onTap: () => _showChangeCounterDialog(context),
+            borderRadius: BorderRadius.circular(4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$cashier · $counter',
+                  style: const TextStyle(color: AppTheme.neonCyan, fontSize: 11.5, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.edit_note, color: AppTheme.neonCyan, size: 14),
+              ],
+            ),
           ),
         ],
       ),
@@ -248,51 +261,58 @@ class _PosScreenState extends State<PosScreen> {
           child: Row(
             children: [
               Expanded(
-                child: Container(
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppTheme.cyberBgTertiary,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppTheme.cardBorder),
-                  ),
-                  child: TextField(
-                    controller: _searchCtrl,
-                    style: const TextStyle(color: AppTheme.lightText, fontSize: 13),
-                    decoration: InputDecoration(
-                      hintText: 'Search products...',
-                      hintStyle: const TextStyle(color: AppTheme.dimText, fontSize: 13),
-                      prefixIcon: const Icon(Icons.search, color: AppTheme.slateText, size: 20),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                      suffixIcon: _searchCtrl.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, color: AppTheme.dimText, size: 16),
-                              onPressed: () {
-                                _searchCtrl.clear();
-                                productProv.setSearchQuery('');
-                              },
-                            )
-                          : null,
+                child: TextField(
+                  controller: _searchCtrl,
+                  style: const TextStyle(color: AppTheme.lightText, fontSize: 13),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: AppTheme.cyberBgTertiary,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    hintText: 'Search products by name or barcode...',
+                    hintStyle: const TextStyle(color: AppTheme.dimText, fontSize: 13),
+                    prefixIcon: const Icon(Icons.search, color: AppTheme.slateText, size: 20),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: const BorderSide(color: AppTheme.cardBorder),
                     ),
-                    onChanged: (val) => productProv.setSearchQuery(val),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: const BorderSide(color: AppTheme.cardBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: const BorderSide(color: AppTheme.neonCyan, width: 1.5),
+                    ),
+                    suffixIcon: _searchCtrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, color: AppTheme.dimText, size: 16),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              productProv.setSearchQuery('');
+                            },
+                          )
+                        : null,
                   ),
+                  onChanged: (val) => productProv.setSearchQuery(val),
                 ),
               ),
               const SizedBox(width: 8),
-              InkWell(
-                onTap: () => _showManualBarcodeDialog(context),
-                borderRadius: BorderRadius.circular(22),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppTheme.cyberBgTertiary,
-                    border: Border.all(color: AppTheme.cardBorder),
+              Tooltip(
+                message: 'Scan 1D / 2D Barcode or QR Code with Camera',
+                child: InkWell(
+                  onTap: () => _openCameraBarcodeScanner(context),
+                  borderRadius: BorderRadius.circular(22),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.cyberBgTertiary,
+                      border: Border.all(color: AppTheme.cardBorder),
+                    ),
+                    child: const Icon(Icons.qr_code_scanner, color: AppTheme.neonCyan, size: 22),
                   ),
-                  child: const Icon(Icons.qr_code_scanner, color: AppTheme.neonCyan, size: 22),
                 ),
               ),
               const SizedBox(width: 8),
@@ -517,7 +537,6 @@ class _PosScreenState extends State<PosScreen> {
     final isWholesale = mode == 'wholesale' || mode == 'w_loan';
     final isLoan = mode == 'r_loan' || mode == 'w_loan';
     final price = isWholesale ? (p.wsalePrice ?? p.retailPrice) : p.retailPrice;
-    final profit = (price - p.costPrice).clamp(0.0, double.infinity);
     final currency = settings.currency ?? 'Rs';
 
     Color priceColor = AppTheme.neonCyan;
@@ -559,9 +578,15 @@ class _PosScreenState extends State<PosScreen> {
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: imageBytes != null
-                        ? Image.memory(imageBytes, fit: BoxFit.cover)
+                        ? Image.memory(
+                            imageBytes,
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => const Center(
+                              child: Icon(Icons.inventory_2_outlined, color: AppTheme.slateText, size: 28),
+                            ),
+                          )
                         : const Center(
-                            child: Icon(Icons.devices, color: AppTheme.slateText, size: 32),
+                            child: Icon(Icons.inventory_2_outlined, color: AppTheme.dimText, size: 28),
                           ),
                   ),
                 ),
@@ -609,24 +634,33 @@ class _PosScreenState extends State<PosScreen> {
                       ),
                       const SizedBox(height: 4),
 
-                      // Price
-                      Text(
-                        '$currency ${price.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: priceColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13.5,
-                        ),
-                      ),
-
-                      // Profit
-                      Text(
-                        'Profit: $currency ${profit.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          color: AppTheme.greenSuccess,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      // Price Row (with Dual indicator if dual pricing)
+                      Row(
+                        children: [
+                          Text(
+                            '$currency ${price.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: priceColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                          if (p.hasDualPricing) ...[
+                            const SizedBox(width: 5),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF59E0B).withOpacity(0.18),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.6)),
+                              ),
+                              child: const Text(
+                                '🟡 Dual',
+                                style: TextStyle(color: Color(0xFFF59E0B), fontSize: 9.5, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 6),
 
@@ -794,20 +828,6 @@ class _PosScreenState extends State<PosScreen> {
                       '${settings.currency} ${item.price.toStringAsFixed(2)}',
                       style: const TextStyle(color: AppTheme.neonCyan, fontSize: 12),
                     ),
-                    if (item.batchLabel != null) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: AppTheme.orangeWarning.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          item.batchLabel!,
-                          style: const TextStyle(color: AppTheme.orangeWarning, fontSize: 9, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ],
@@ -1013,6 +1033,202 @@ class _PosScreenState extends State<PosScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showChangeCounterDialog(BuildContext context) {
+    final settingsProv = Provider.of<SettingsProvider>(context, listen: false);
+    final currentCounter = settingsProv.settings.counterName.isNotEmpty ? settingsProv.settings.counterName : 'Counter 1';
+    final ctrl = TextEditingController(text: currentCounter);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.cyberBgSecondary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppTheme.cardBorder),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.point_of_sale, color: AppTheme.neonCyan, size: 20),
+            SizedBox(width: 8),
+            Text('Set Counter Name', style: TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This counter name will be printed on customer receipts:',
+              style: TextStyle(color: AppTheme.slateText, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              style: const TextStyle(color: AppTheme.lightText),
+              decoration: const InputDecoration(
+                labelText: 'Counter Name (e.g. Counter 1, Counter 2)',
+                hintText: 'Counter 1',
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              children: ['Counter 1', 'Counter 2', 'Counter 3', 'Takeaway'].map((cName) {
+                return ActionChip(
+                  label: Text(cName, style: const TextStyle(fontSize: 11, color: AppTheme.lightText)),
+                  backgroundColor: AppTheme.cyberBgTertiary,
+                  onPressed: () => ctrl.text = cName,
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.slateText)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.neonCyan, foregroundColor: Colors.black),
+            onPressed: () async {
+              final newName = ctrl.text.trim().isEmpty ? 'Counter 1' : ctrl.text.trim();
+              await settingsProv.updateSettings(settingsProv.settings.copyWith(counterName: newName));
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Save Counter'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openCameraBarcodeScanner(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.cyberBgSecondary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        side: BorderSide(color: AppTheme.cardBorder),
+      ),
+      builder: (ctx) {
+        bool hasScanned = false;
+        final cameraController = MobileScannerController(
+          detectionSpeed: DetectionSpeed.noDuplicates,
+          facing: CameraFacing.back,
+          torchEnabled: false,
+        );
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.72,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.qr_code_scanner, color: AppTheme.neonCyan, size: 22),
+                          SizedBox(width: 8),
+                          Text(
+                            'Scan Barcode / QR Code',
+                            style: TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.flash_on, color: AppTheme.slateText),
+                            tooltip: 'Toggle Flash',
+                            onPressed: () => cameraController.toggleTorch(),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.flip_camera_ios, color: AppTheme.slateText),
+                            tooltip: 'Flip Camera',
+                            onPressed: () => cameraController.switchCamera(),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: AppTheme.slateText),
+                            onPressed: () {
+                              cameraController.dispose();
+                              Navigator.pop(ctx);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Point phone camera at any 1D Barcode (EAN, UPC, Code 128) or 2D QR Code',
+                    style: TextStyle(color: AppTheme.slateText, fontSize: 11),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          MobileScanner(
+                            controller: cameraController,
+                            onDetect: (capture) {
+                              if (hasScanned) return;
+                              final List<Barcode> barcodes = capture.barcodes;
+                              for (final barcode in barcodes) {
+                                final rawValue = barcode.rawValue;
+                                if (rawValue != null && rawValue.isNotEmpty) {
+                                  hasScanned = true;
+                                  cameraController.dispose();
+                                  Navigator.pop(ctx);
+                                  _onBarcodeSubmitted(rawValue);
+                                  break;
+                                }
+                              }
+                            },
+                          ),
+                          // Viewfinder overlay
+                          Container(
+                            width: 240,
+                            height: 240,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: AppTheme.neonCyan, width: 2),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.keyboard, size: 16),
+                    label: const Text('Enter Barcode Manually'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.neonCyan,
+                      side: const BorderSide(color: AppTheme.neonCyan),
+                    ),
+                    onPressed: () {
+                      cameraController.dispose();
+                      Navigator.pop(ctx);
+                      _showManualBarcodeDialog(context);
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

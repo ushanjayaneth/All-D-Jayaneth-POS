@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/product.dart';
@@ -379,58 +380,29 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   ],
                 ),
 
-                // Old Stock vs New Stock Price Badges
-                if ((p.oldStockPrice != null && p.oldStockPrice! > 0) || (p.newStockPrice != null && p.newStockPrice! > 0)) ...[
+                // Dual Price Yellow Tick Badge (without leaking prices)
+                if (p.hasDualPricing) ...[
                   const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      if (p.oldStockPrice != null && p.oldStockPrice! > 0) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.orangeWarning.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: AppTheme.orangeWarning.withOpacity(0.4)),
-                          ),
-                          child: Text(
-                            'Old Stock: $currency ${p.oldStockPrice!.toStringAsFixed(2)}',
-                            style: const TextStyle(color: AppTheme.orangeWarning, fontSize: 11, fontWeight: FontWeight.w600),
-                          ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.6)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle, color: Color(0xFFF59E0B), size: 13),
+                        SizedBox(width: 4),
+                        Text(
+                          'Dual Price',
+                          style: TextStyle(color: Color(0xFFF59E0B), fontSize: 11, fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(width: 8),
                       ],
-                      if (p.newStockPrice != null && p.newStockPrice! > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.greenSuccess.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: AppTheme.greenSuccess.withOpacity(0.4)),
-                          ),
-                          child: Text(
-                            'New Stock: $currency ${p.newStockPrice!.toStringAsFixed(2)}',
-                            style: const TextStyle(color: AppTheme.greenSuccess, fontSize: 11, fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                    ],
+                    ),
                   ),
                 ],
-
-                const SizedBox(height: 6),
-                // Retail & Wholesale Profits
-                Row(
-                  children: [
-                    Text(
-                      'Retail Profit: $currency ${(p.retailPrice - p.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
-                      style: const TextStyle(color: AppTheme.greenSuccess, fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'WS Profit: $currency ${((p.wsalePrice ?? p.retailPrice) - p.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
-                      style: const TextStyle(color: AppTheme.neonCyan, fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -440,21 +412,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Dual Price Badge
-              if (p.hasDualPricing) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF59E0B),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    '🟡 Dual Price',
-                    style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(height: 6),
-              ],
 
               // Green [+ New Stock] Button
               ElevatedButton.icon(
@@ -543,6 +500,95 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
+  Future<void> _pickProductImage(
+    BuildContext context,
+    StateSetter setDialogState,
+    Function(String?) onImageReady,
+  ) async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.cyberBgSecondary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        side: BorderSide(color: AppTheme.cardBorder),
+      ),
+      builder: (bCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.add_a_photo, color: AppTheme.neonCyan, size: 20),
+                    SizedBox(width: 8),
+                    Text('Product Photo', style: TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
+              ),
+              const Divider(color: AppTheme.cardBorder),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: AppTheme.neonCyan.withOpacity(0.12), shape: BoxShape.circle),
+                  child: const Icon(Icons.camera_alt, color: AppTheme.neonCyan, size: 22),
+                ),
+                title: const Text('Take Photo with Camera', style: TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.w600)),
+                subtitle: const Text('Open phone camera to snap product picture', style: TextStyle(color: AppTheme.slateText, fontSize: 12)),
+                onTap: () async {
+                  Navigator.pop(bCtx);
+                  setDialogState(() {});
+                  try {
+                    final picker = ImagePicker();
+                    final photo = await picker.pickImage(source: ImageSource.camera, maxWidth: 800, maxHeight: 800);
+                    if (photo != null) {
+                      final raw = await photo.readAsBytes();
+                      final compressed = await ImageCompressionService.compressAndConvertToBase64(
+                        raw,
+                        maxSize: 800,
+                        targetBytes: 100 * 1024,
+                      );
+                      onImageReady(compressed);
+                    }
+                  } catch (_) {}
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: AppTheme.greenSuccess.withOpacity(0.12), shape: BoxShape.circle),
+                  child: const Icon(Icons.photo_library, color: AppTheme.greenSuccess, size: 22),
+                ),
+                title: const Text('Choose from Gallery / Files', style: TextStyle(color: AppTheme.lightText, fontWeight: FontWeight.w600)),
+                subtitle: const Text('Select image file from device storage', style: TextStyle(color: AppTheme.slateText, fontSize: 12)),
+                onTap: () async {
+                  Navigator.pop(bCtx);
+                  setDialogState(() {});
+                  try {
+                    final picker = ImagePicker();
+                    final photo = await picker.pickImage(source: ImageSource.gallery, maxWidth: 800, maxHeight: 800);
+                    if (photo != null) {
+                      final raw = await photo.readAsBytes();
+                      final compressed = await ImageCompressionService.compressAndConvertToBase64(
+                        raw,
+                        maxSize: 800,
+                        targetBytes: 100 * 1024,
+                      );
+                      onImageReady(compressed);
+                    }
+                  } catch (_) {}
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // Add / Edit Product Dialog with Image Upload (<100KB Auto Compression)
   void _showProductDialog(BuildContext context, Product? product) {
     final productProv = Provider.of<ProductProvider>(context, listen: false);
@@ -609,17 +655,23 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                       child: Row(
                         children: [
-                          ClipRRect(
+                          InkWell(
+                            onTap: () => _pickProductImage(context, setDialogState, (compressed) {
+                              setDialogState(() => currentImageBase64 = compressed);
+                            }),
                             borderRadius: BorderRadius.circular(6),
-                            child: Container(
-                              width: 64,
-                              height: 64,
-                              color: AppTheme.cyberBg,
-                              child: isCompressingImage
-                                  ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.neonCyan))
-                                  : imgBytes != null
-                                      ? Image.memory(imgBytes, width: 64, height: 64, fit: BoxFit.cover)
-                                      : const Icon(Icons.add_a_photo, color: AppTheme.dimText, size: 28),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                width: 64,
+                                height: 64,
+                                color: AppTheme.cyberBg,
+                                child: isCompressingImage
+                                    ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.neonCyan))
+                                    : imgBytes != null
+                                        ? Image.memory(imgBytes, width: 64, height: 64, fit: BoxFit.cover)
+                                        : const Icon(Icons.add_a_photo, color: AppTheme.dimText, size: 28),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -628,37 +680,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 OutlinedButton.icon(
-                                  icon: const Icon(Icons.upload_file, size: 16),
-                                  label: Text(imgBytes == null ? 'Select Image' : 'Change Image'),
+                                  icon: const Icon(Icons.camera_alt_outlined, size: 16),
+                                  label: Text(imgBytes == null ? 'Take or Choose Photo' : 'Change Photo'),
                                   style: OutlinedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                   ),
-                                  onPressed: () async {
-                                    setDialogState(() => isCompressingImage = true);
-                                    try {
-                                      final result = await FilePicker.platform.pickFiles(
-                                        type: FileType.image,
-                                        allowMultiple: false,
-                                        withData: true,
-                                      );
-                                      if (result != null && result.files.isNotEmpty) {
-                                        final raw = result.files.first.bytes;
-                                        if (raw != null) {
-                                          final compressed = await ImageCompressionService.compressAndConvertToBase64(
-                                            raw,
-                                            maxSize: 800,
-                                            targetBytes: 100 * 1024,
-                                          );
-                                          setDialogState(() {
-                                            currentImageBase64 = compressed;
-                                            isCompressingImage = false;
-                                          });
-                                          return;
-                                        }
-                                      }
-                                    } catch (_) {}
-                                    setDialogState(() => isCompressingImage = false);
-                                  },
+                                  onPressed: () => _pickProductImage(context, setDialogState, (compressed) {
+                                    setDialogState(() => currentImageBase64 = compressed);
+                                  }),
                                 ),
                                 if (imgBytes != null) ...[
                                   const SizedBox(height: 4),

@@ -60,7 +60,7 @@ class BatchPriceSelectorDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Select Price Batch for this Product:',
+              'Select Selling Price:',
               style: TextStyle(color: AppTheme.slateText, fontSize: 12),
             ),
             const SizedBox(height: 16),
@@ -71,15 +71,14 @@ class BatchPriceSelectorDialog extends StatelessWidget {
                 context: context,
                 icon: Icons.history,
                 badgeColor: AppTheme.orangeWarning,
-                badgeText: '🟡 Old Stock',
+                badgeText: '🟡 Old Stock Price',
                 priceText: '$currency ${product.oldStockPrice!.toStringAsFixed(2)}',
-                profitText: 'Profit: $currency ${(product.oldStockPrice! - product.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
                 onTap: () {
                   Navigator.pop(
                     context,
                     BatchPriceSelection(
                       price: product.oldStockPrice!,
-                      label: 'Old Stock',
+                      label: '',
                       batchId: 'old_batch',
                       costPrice: product.costPrice,
                     ),
@@ -95,15 +94,14 @@ class BatchPriceSelectorDialog extends StatelessWidget {
                 context: context,
                 icon: Icons.new_releases_outlined,
                 badgeColor: AppTheme.greenSuccess,
-                badgeText: '🟢 New Stock',
+                badgeText: '🟢 New Stock Price',
                 priceText: '$currency ${product.newStockPrice!.toStringAsFixed(2)}',
-                profitText: 'Profit: $currency ${(product.newStockPrice! - product.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
                 onTap: () {
                   Navigator.pop(
                     context,
                     BatchPriceSelection(
                       price: product.newStockPrice!,
-                      label: 'New Stock',
+                      label: '',
                       batchId: 'new_batch',
                       costPrice: product.costPrice,
                     ),
@@ -126,13 +124,12 @@ class BatchPriceSelectorDialog extends StatelessWidget {
                   badgeColor: AppTheme.neonPurple,
                   badgeText: '📦 $bLabel (Stock: $bStock)',
                   priceText: '$currency ${bPrice.toStringAsFixed(2)}',
-                  profitText: 'Profit: $currency ${(bPrice - batch.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
                   onTap: () {
                     Navigator.pop(
                       context,
                       BatchPriceSelection(
                         price: bPrice,
-                        label: bLabel,
+                        label: '',
                         batchId: batch.batchId,
                         costPrice: batch.costPrice,
                       ),
@@ -152,13 +149,12 @@ class BatchPriceSelectorDialog extends StatelessWidget {
                 badgeColor: AppTheme.neonCyan,
                 badgeText: saleMode == 'wholesale' ? '📦 Wholesale Price' : '🏪 Standard Price',
                 priceText: '$currency ${defaultPrice.toStringAsFixed(2)}',
-                profitText: 'Profit: $currency ${(defaultPrice - product.costPrice).clamp(0.0, double.infinity).toStringAsFixed(2)}',
                 onTap: () {
                   Navigator.pop(
                     context,
                     BatchPriceSelection(
                       price: defaultPrice,
-                      label: 'Standard',
+                      label: '',
                       costPrice: product.costPrice,
                     ),
                   );
@@ -183,7 +179,6 @@ class BatchPriceSelectorDialog extends StatelessWidget {
     required Color badgeColor,
     required String badgeText,
     required String priceText,
-    String? profitText,
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -213,13 +208,6 @@ class BatchPriceSelectorDialog extends StatelessWidget {
                     priceText,
                     style: const TextStyle(color: AppTheme.lightText, fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  if (profitText != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      profitText,
-                      style: const TextStyle(color: AppTheme.greenSuccess, fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                  ],
                 ],
               ),
             ),

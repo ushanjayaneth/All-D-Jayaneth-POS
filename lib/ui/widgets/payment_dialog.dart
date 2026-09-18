@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/sale.dart';
 import '../../providers/pos_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/printer_service.dart';
@@ -41,7 +40,6 @@ class _PaymentDialogState extends State<PaymentDialog> {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context).settings;
     final pos = Provider.of<PosProvider>(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final changeAmount = (_paidAmount - widget.totalAmount).clamp(0.0, double.infinity);
 
     return Dialog(

@@ -13,6 +13,7 @@ class StoreSettings {
   final int lowStockAlert;
   final String? firebaseRtdbUrl;
   final bool autoPrint;
+  final String counterName;
 
   StoreSettings({
     this.id,
@@ -29,6 +30,7 @@ class StoreSettings {
     this.lowStockAlert = 5,
     this.firebaseRtdbUrl,
     this.autoPrint = true,
+    this.counterName = 'Counter 1',
   });
 
   Map<String, dynamic> toMap() {
@@ -47,6 +49,7 @@ class StoreSettings {
       'low_stock_alert': lowStockAlert,
       'firebase_rtdb_url': firebaseRtdbUrl,
       'auto_print': autoPrint ? 1 : 0,
+      'counter_name': counterName,
     };
   }
 
@@ -66,6 +69,7 @@ class StoreSettings {
       lowStockAlert: (map['low_stock_alert'] as num?)?.toInt() ?? (map['lowStockAlert'] as num?)?.toInt() ?? 5,
       firebaseRtdbUrl: map['firebase_rtdb_url']?.toString() ?? map['firebaseUrl']?.toString(),
       autoPrint: (map['auto_print'] as int?) != 0,
+      counterName: map['counter_name']?.toString() ?? 'Counter 1',
     );
   }
 
@@ -84,6 +88,7 @@ class StoreSettings {
     int? lowStockAlert,
     String? firebaseRtdbUrl,
     bool? autoPrint,
+    String? counterName,
   }) {
     return StoreSettings(
       id: id ?? this.id,
@@ -100,6 +105,7 @@ class StoreSettings {
       lowStockAlert: lowStockAlert ?? this.lowStockAlert,
       firebaseRtdbUrl: firebaseRtdbUrl ?? this.firebaseRtdbUrl,
       autoPrint: autoPrint ?? this.autoPrint,
+      counterName: counterName ?? this.counterName,
     );
   }
 }

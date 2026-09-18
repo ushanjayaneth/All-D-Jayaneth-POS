@@ -10,8 +10,6 @@ class ReportsProvider extends ChangeNotifier {
   List<Sale> _sales = [];
   List<Expense> _expenses = [];
   String _timeFilter = 'today'; // 'today', 'this_week', 'this_month', 'all'
-  DateTime? _customStartDate;
-  DateTime? _customEndDate;
   bool _isLoading = false;
 
   List<Sale> get sales => _sales;

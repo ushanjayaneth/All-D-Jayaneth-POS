@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -72,10 +71,14 @@ class PrinterService {
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     pw.Text('Date: $dateStr', style: const pw.TextStyle(fontSize: 7)),
-                    if (sale.cashierName != null)
-                      pw.Text('Cashier: ${sale.cashierName}', style: const pw.TextStyle(fontSize: 7)),
+                    pw.Text('Counter: ${settings.counterName}', style: const pw.TextStyle(fontSize: 7)),
                   ],
                 ),
+                if (sale.cashierName != null)
+                  pw.Align(
+                    alignment: pw.Alignment.centerLeft,
+                    child: pw.Text('Cashier: ${sale.cashierName}', style: const pw.TextStyle(fontSize: 7)),
+                  ),
                 if (sale.customerName != null)
                   pw.Align(
                     alignment: pw.Alignment.centerLeft,
@@ -261,5 +264,53 @@ class PrinterService {
         ],
       ),
     );
+  }
+
+  // Print Test Receipt to check printer connectivity
+  Future<bool> printTestReceipt({required StoreSettings settings}) async {
+    try {
+      final doc = pw.Document();
+      final now = DateTime.now();
+      final dateStr = DateFormat('yyyy-MM-dd HH:mm').format(now);
+
+      doc.addPage(
+        pw.Page(
+          pageFormat: const PdfPageFormat(80 * PdfPageFormat.mm, double.infinity, marginAll: 4 * PdfPageFormat.mm),
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                pw.Text(settings.storeName, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
+                pw.Text('HARDWARE PRINTER TEST', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
+                pw.Divider(thickness: 0.8),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Date: $dateStr', style: const pw.TextStyle(fontSize: 7)),
+                    pw.Text('Counter: ${settings.counterName}', style: const pw.TextStyle(fontSize: 7)),
+                  ],
+                ),
+                pw.Divider(thickness: 0.5),
+                pw.SizedBox(height: 4),
+                pw.Text('SUCCESS: Printer Connection OK!', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                pw.Text('Thermal / Bluetooth / USB / LAN Ready', style: const pw.TextStyle(fontSize: 7)),
+                pw.SizedBox(height: 6),
+                pw.Divider(thickness: 0.8),
+                pw.Text('*** TEST OK ***', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+              ],
+            );
+          },
+        ),
+      );
+
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => doc.save(),
+        name: 'Test_Receipt_${settings.counterName}',
+      );
+      return true;
+    } catch (e) {
+      debugPrint('Test print error: $e');
+      return false;
+    }
   }
 }

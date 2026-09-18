@@ -32,9 +32,13 @@ dependencies:
   # Charts for Financial Analytics & Reports
   fl_chart: ^0.68.0
 
-  # File Handling & Exporting
+  # File Handling & Camera Image Picking
   csv: ^6.0.0
   file_picker: ^8.0.0+1
+  image_picker: ^1.1.2
+
+  # Camera 1D/2D Barcode & QR Code Scanner
+  mobile_scanner: ^5.2.3
 
   # Web & WhatsApp Integration
   url_launcher: ^6.3.0

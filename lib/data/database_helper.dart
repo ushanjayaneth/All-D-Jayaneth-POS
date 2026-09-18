@@ -28,7 +28,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
       onOpen: _onOpenDB,
@@ -42,6 +42,9 @@ class DatabaseHelper {
     } catch (_) {}
     try {
       await db.execute("ALTER TABLE products ADD COLUMN low_stock_limit INTEGER");
+    } catch (_) {}
+    try {
+      await db.execute("ALTER TABLE settings ADD COLUMN counter_name TEXT DEFAULT 'Counter 1'");
     } catch (_) {}
   }
 
@@ -191,7 +194,8 @@ class DatabaseHelper {
         admin_pin TEXT DEFAULT '1234',
         low_stock_alert INTEGER DEFAULT 5,
         firebase_rtdb_url TEXT,
-        auto_print INTEGER DEFAULT 1
+        auto_print INTEGER DEFAULT 1,
+        counter_name TEXT DEFAULT 'Counter 1'
       )
     ''');
 
@@ -236,6 +240,11 @@ class DatabaseHelper {
       } catch (_) {}
       try {
         await db.execute("ALTER TABLE products ADD COLUMN low_stock_limit INTEGER");
+      } catch (_) {}
+    }
+    if (oldVersion < 4) {
+      try {
+        await db.execute("ALTER TABLE settings ADD COLUMN counter_name TEXT DEFAULT 'Counter 1'");
       } catch (_) {}
     }
   }
